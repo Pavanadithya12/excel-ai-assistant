@@ -418,5 +418,5 @@ The repository includes `vercel.json` and `api/index.py` configured for Vercel S
 - **Formula Safety**: Formulas are syntactically validated and mapped to existing columns without inventing or hallucinating non-existent headers.
 - **Headless Visualization**: Matplotlib is explicitly bound to the non-blocking `Agg` backend to ensure thread-safe, server-safe rendering.
 - **SQL Alchemy Parameterization**: All queries use ORM parameterization to prevent SQL injection vulnerabilities.
-- **Cloud Readiness**: Seamlessly runs on localhost, Render (Docker/Native), and Vercel (Serverless).
+- **Cloud Readiness**: Seamlessly runs on localhost, Render (Python native), and Vercel (Serverless).
 
