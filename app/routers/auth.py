@@ -1,0 +1,162 @@
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models.user import User
+from app.models.excel_file import ExcelFile
+from app.models.chat import ChatSession
+from app.models.history import AnalysisHistory
+from app.schemas.auth import (
+    UserSignUpRequest, UserSignInRequest, VerifyOTPRequest, ResendOTPRequest,
+    Token, UserProfileResponse, UserSummary
+)
+from app.services.auth_service import auth_service, get_current_user
+from app.services.email_service import email_service
+
+router = APIRouter(prefix="/api/auth", tags=["Authentication & User Management"])
+
+@router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
+def register_user(request: UserSignUpRequest, db: Session = Depends(get_db)):
+    """
+    Step 1: Sign up user with email, name, password.
+    Generates and sends a 6-digit Email OTP.
+    """
+    existing_user = db.query(User).filter(User.email == request.email).first()
+    if existing_user:
+        if existing_user.is_verified:
+            raise HTTPException(status_code=400, detail="An account with this email already exists.")
+        # User exists but unverified: regenerate OTP
+        user = existing_user
+        user.full_name = request.full_name
+        user.hashed_password = auth_service.hash_password(request.password)
+    else:
+        user = User(
+            email=request.email,
+            full_name=request.full_name,
+            hashed_password=auth_service.hash_password(request.password),
+            is_active=True,
+            is_verified=False
+        )
+        db.add(user)
+
+    # Generate OTP
+    otp = auth_service.generate_otp()
+    user.otp_code = otp
+    user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
+    db.commit()
+
+    # Send Email OTP
+    email_service.send_otp_email(user.email, otp)
+
+    return {
+        "message": f"Registration initiated. Verification OTP sent to {user.email}.",
+        "email": user.email,
+        "dev_otp": otp  # Included for immediate UI testing convenience
+    }
+
+@router.post("/verify-otp", response_model=Token)
+def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
+    """
+    Step 2: Verify Email OTP.
+    Activates account, issues JWT Access Token.
+    """
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if not user.otp_code or user.otp_code != request.otp.strip():
+        raise HTTPException(status_code=400, detail="Invalid verification OTP.")
+
+    if user.otp_expires_at and datetime.utcnow() > user.otp_expires_at:
+        raise HTTPException(status_code=400, detail="Verification OTP has expired. Please request a new one.")
+
+    # Account Activated
+    user.is_verified = True
+    user.otp_code = None
+    user.otp_expires_at = None
+    db.commit()
+    db.refresh(user)
+
+    # Generate JWT
+    token_str = auth_service.create_access_token({"sub": user.email, "user_id": user.id})
+    return {
+        "access_token": token_str,
+        "token_type": "bearer",
+        "user": user
+    }
+
+@router.post("/resend-otp", response_model=dict)
+def resend_otp(request: ResendOTPRequest, db: Session = Depends(get_db)):
+    """Resends a fresh OTP code to user's email"""
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    otp = auth_service.generate_otp()
+    user.otp_code = otp
+    user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
+    db.commit()
+
+    email_service.send_otp_email(user.email, otp)
+    return {
+        "message": f"Fresh verification OTP sent to {user.email}.",
+        "dev_otp": otp
+    }
+
+@router.post("/login", response_model=Token)
+def login(request: UserSignInRequest, db: Session = Depends(get_db)):
+    """
+    Authenticate user with email and password -> returns JWT Token.
+    """
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user or not auth_service.verify_password(request.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    if not user.is_verified:
+        # Check if existing OTP is still valid
+        if not user.otp_code or (user.otp_expires_at and datetime.utcnow() > user.otp_expires_at):
+            otp = auth_service.generate_otp()
+            user.otp_code = otp
+            user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
+            db.commit()
+            email_service.send_otp_email(user.email, otp)
+        else:
+            otp = user.otp_code
+
+        raise HTTPException(
+            status_code=403,
+            detail="Account not verified. Please verify your OTP to activate account.",
+            headers={"X-Dev-OTP": otp}
+        )
+
+    token_str = auth_service.create_access_token({"sub": user.email, "user_id": user.id})
+    return {
+        "access_token": token_str,
+        "token_type": "bearer",
+        "user": user
+    }
+
+@router.get("/me", response_model=UserProfileResponse)
+def get_user_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns authenticated user's profile and analytics stats.
+    """
+    files_count = db.query(ExcelFile).filter(ExcelFile.user_id == current_user.id).count()
+    chats_count = db.query(ChatSession).filter(ChatSession.user_id == current_user.id).count()
+    history_count = db.query(AnalysisHistory).filter(AnalysisHistory.user_id == current_user.id).count()
+
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "is_active": current_user.is_active,
+        "is_verified": current_user.is_verified,
+        "created_at": current_user.created_at,
+        "total_files_uploaded": files_count,
+        "total_chats": chats_count,
+        "total_analyses": history_count
+    }

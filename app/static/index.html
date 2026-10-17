@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Excel Assistant | Python + FastAPI + SQL + LLM</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">
+          <div class="logo-icon"><i class="fa-solid fa-file-excel"></i></div>
+          <div class="logo-text">
+            <h2>Excel AI Assistant</h2>
+            <span>FastAPI • SQL • LLM</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-actions">
+        <button class="btn-primary" id="btn-start-all-demo" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); font-weight: 700; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);">
+          <i class="fa-solid fa-bolt"></i> ⚡ Start All (Demo Run)
+        </button>
+        <button class="btn-primary" id="btn-new-chat">
+          <i class="fa-solid fa-plus"></i> New Chat
+        </button>
+        <button class="btn-secondary" id="btn-upload-file">
+          <i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Excel / CSV
+        </button>
+        <input type="file" id="file-input" accept=".xlsx, .xls, .csv" style="display: none;">
+        <button class="btn-secondary" id="btn-load-sample" style="border-style: dashed; color: #2563eb; font-size: 12px;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Load Sample Sales Data
+        </button>
+      </div>
+
+      <!-- Active File Card -->
+      <div class="active-file-card" id="active-file-card" style="display: none;">
+        <div class="file-info-row">
+          <span class="file-name-label" id="file-name-display"><i class="fa-solid fa-table"></i> SalesData.xlsx</span>
+          <span class="file-meta-pill" id="file-size-display">24 KB</span>
+        </div>
+        <select class="sheet-selector" id="sheet-dropdown">
+          <option value="">Loading sheets...</option>
+        </select>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-secondary" id="btn-inspect-schema" style="flex: 1; padding: 4px 8px; font-size: 11px;">
+            <i class="fa-solid fa-eye"></i> Inspect Schema
+          </button>
+          <a class="btn-secondary" id="btn-download-original" href="#" target="_blank" style="padding: 4px 8px; font-size: 11px; text-decoration: none;" title="Download Original">
+            <i class="fa-solid fa-download"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- History List -->
+      <div class="sidebar-section-title">Recent Conversations</div>
+      <div class="history-list" id="chat-history-list">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- User Profile Footer -->
+      <div class="sidebar-footer">
+        <div class="user-profile-badge" id="user-badge" onclick="openAuthModal()">
+          <div class="avatar-circle" id="user-avatar">?</div>
+          <div class="user-names">
+            <span class="user-display-name" id="user-name">Guest User</span>
+            <span class="user-status" id="user-status-text">Click to Sign In</span>
+          </div>
+        </div>
+        <button id="btn-logout" style="display: none; background: none; border: none; color: #ef4444; cursor: pointer;" title="Sign Out">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-navbar">
+        <div class="top-title-area">
+          <h3 class="top-title" id="chat-title-header">AI Excel Assistant</h3>
+          <span class="status-badge" id="active-sheet-pill"><i class="fa-solid fa-circle-check"></i> Ready</span>
+        </div>
+        <div class="navbar-actions">
+          <button class="btn-secondary" id="btn-history-view" style="font-size: 12px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> Analysis History
+          </button>
+          <a class="btn-primary" id="btn-download-modified" href="#" style="display: none; text-decoration: none; font-size: 12px; background: #059669;">
+            <i class="fa-solid fa-file-export"></i> Download Enhanced Excel
+          </a>
+        </div>
+      </header>
+
+      <!-- Chat Messages Container -->
+      <div class="chat-container" id="chat-stream">
+        <!-- Welcome Hero Banner -->
+        <div class="welcome-hero" id="welcome-hero">
+          <div class="logo-icon" style="margin: 0 auto 16px; width: 48px; height: 48px; font-size: 24px;">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <h1>Ask anything about your Spreadsheet</h1>
+          <p>Upload your Excel or CSV file. Ask questions in natural language, generate Excel formulas, calculate aggregations, and create charts.</p>
+
+          <div class="hero-features">
+            <div class="feature-box">
+              <h4><i class="fa-solid fa-calculator" style="color: #2563eb;"></i> Formula Generation</h4>
+              <p>SUM, AVERAGE, IF, SUMIF, COUNTIF, XLOOKUP, differences, and profit margins.</p>
+            </div>
+            <div class="feature-box">
+              <h4><i class="fa-solid fa-chart-pie" style="color: #10b981;"></i> Data Summaries</h4>
+              <p>Totals, means, min/max, top-10 customers, and multi-column group-by.</p>
+            </div>
+            <div class="feature-box">
+              <h4><i class="fa-solid fa-chart-simple" style="color: #f59e0b;"></i> Visualizations</h4>
+              <p>High-resolution bar, line, pie, and scatter charts generated with Matplotlib.</p>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 10px; text-transform: uppercase;">
+            Try asking one of these:
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
+            <button class="suggestion-chip" onclick="askSampleQuestion('What is the total sales amount?')">What is the total sales amount?</button>
+            <button class="suggestion-chip" onclick="askSampleQuestion('Calculate the average sales for each region.')">Calculate the average sales for each region.</button>
+            <button class="suggestion-chip" onclick="askSampleQuestion('Give me an Excel formula to calculate profit margin.')">Give me an Excel formula to calculate profit margin.</button>
+            <button class="suggestion-chip" onclick="askSampleQuestion('Which product has the highest revenue?')">Which product has the highest revenue?</button>
+            <button class="suggestion-chip" onclick="askSampleQuestion('Show monthly sales as a line chart.')">Show monthly sales as a line chart.</button>
+            <button class="suggestion-chip" onclick="askSampleQuestion('Create a bar chart comparing sales by region.')">Create a bar chart comparing sales by region.</button>
+            <button class="suggestion-chip" onclick="askSampleQuestion('Find the top 10 customers by total purchase amount.')">Find the top 10 customers by total purchase amount.</button>
+            <button class="suggestion-chip" onclick="askSampleQuestion('Add a formula to calculate the difference between Actual and Target.')">Add a formula to calculate the difference between Actual and Target.</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Suggestion Bar -->
+      <div class="suggestions-bar" id="bottom-suggestions-bar">
+        <span class="suggestion-chip" onclick="askSampleQuestion('What is the total sales amount?')">Total Sales</span>
+        <span class="suggestion-chip" onclick="askSampleQuestion('Calculate the average sales for each region.')">Average by Region</span>
+        <span class="suggestion-chip" onclick="askSampleQuestion('Give me an Excel formula to calculate profit margin.')">Formula: Profit Margin</span>
+        <span class="suggestion-chip" onclick="askSampleQuestion('Create a bar chart comparing sales by region.')">Chart: Sales by Region</span>
+        <span class="suggestion-chip" onclick="askSampleQuestion('Show monthly sales as a line chart.')">Chart: Monthly Trend</span>
+        <span class="suggestion-chip" onclick="askSampleQuestion('Find the top 10 customers by total purchase amount.')">Top 10 Customers</span>
+      </div>
+
+      <!-- Input Area -->
+      <div class="chat-input-area">
+        <div class="chat-input-box">
+          <div class="input-options-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="check-web-research">
+              <span><i class="fa-solid fa-globe"></i> AI Web Research</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="check-modify-excel" checked>
+              <span><i class="fa-solid fa-file-excel"></i> Inject into Modified Excel (.xlsx)</span>
+            </label>
+          </div>
+          <div class="input-wrapper">
+            <textarea id="question-input" rows="1" placeholder="Ask a question about your spreadsheet (e.g., 'What is the total sales amount?')..."></textarea>
+            <button class="btn-send" id="btn-submit-question">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="auth-modal-title">Sign In / Register</h3>
+        <button class="close-btn" onclick="closeAuthModal()">&times;</button>
+      </div>
+
+      <!-- Sign In View -->
+      <div id="auth-signin-view">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="signin-email" placeholder="you@company.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signin-password" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" id="btn-submit-signin" style="width: 100%; margin-top: 10px;">
+          Sign In
+        </button>
+        <p style="font-size: 12px; text-align: center; color: var(--text-muted); margin-top: 10px;">
+          Don't have an account? <a href="#" onclick="showSignUpView()" style="color: var(--primary); font-weight: 600;">Sign Up</a>
+        </p>
+      </div>
+
+      <!-- Sign Up View -->
+      <div id="auth-signup-view" style="display: none;">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="signup-name" placeholder="Alex Morgan">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="signup-email" placeholder="you@company.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signup-password" placeholder="At least 6 characters">
+        </div>
+        <button class="btn-primary" id="btn-submit-signup" style="width: 100%; margin-top: 10px;">
+          Register & Send OTP
+        </button>
+        <p style="font-size: 12px; text-align: center; color: var(--text-muted); margin-top: 10px;">
+          Already have an account? <a href="#" onclick="showSignInView()" style="color: var(--primary); font-weight: 600;">Sign In</a>
+        </p>
+      </div>
+
+      <!-- OTP Verification View -->
+      <div id="auth-otp-view" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-muted);">
+          Enter the 6-digit verification code sent to <b id="otp-target-email">your email</b>.
+        </p>
+        <div class="otp-box-dev" id="otp-dev-hint" style="display: none;">
+          Dev OTP Code: <b id="dev-otp-value"></b>
+        </div>
+        <div class="form-group" style="margin-top: 8px;">
+          <label>Verification OTP Code</label>
+          <input type="text" id="input-otp" placeholder="123456" maxlength="6" style="letter-spacing: 0.2em; font-size: 18px; text-align: center;">
+        </div>
+        <button class="btn-primary" id="btn-submit-otp" style="width: 100%; margin-top: 10px;">
+          Verify & Activate Account
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schema Inspector Modal -->
+  <div class="modal-overlay" id="schema-modal">
+    <div class="modal-card" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-table-cells"></i> Spreadsheet Structure & Metadata</h3>
+        <button class="close-btn" onclick="closeSchemaModal()">&times;</button>
+      </div>
+      <div id="schema-content-area">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Analysis History Modal -->
+  <div class="modal-overlay" id="history-modal">
+    <div class="modal-card" style="max-width: 760px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> SQL Analysis History</h3>
+        <button class="close-btn" onclick="closeHistoryModal()">&times;</button>
+      </div>
+      <div id="history-content-area">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
