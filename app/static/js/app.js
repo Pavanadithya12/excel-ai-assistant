@@ -1,6 +1,6 @@
 // ==========================================================================
-// AI EXCEL ASSISTANT - DYNAMIC APPLICATION CONTROLLER
-// 100% Database-Driven • Direct Auth • Dynamic Document Type Detection
+// AI EXCEL ASSISTANT - DYNAMIC APPLICATION CONTROLLER (V3.0)
+// 100% Database-Driven • Direct Auth • Right-Side Rail • Document Deletion
 // ==========================================================================
 
 // Global Application State
@@ -20,7 +20,7 @@ const historyModal = document.getElementById("history-modal");
 const fileInput = document.getElementById("file-input");
 const btnUpload = document.getElementById("btn-upload-file");
 const activeFileCard = document.getElementById("active-file-card");
-const fileTypePill = document.getElementById("file-type-pill");
+const fileTypeDisplay = document.getElementById("file-type-display");
 const fileNameDisplay = document.getElementById("file-name-display");
 const fileSizeDisplay = document.getElementById("file-size-display");
 const fileStatRows = document.getElementById("file-stat-rows");
@@ -29,14 +29,26 @@ const sheetDropdown = document.getElementById("sheet-dropdown");
 const btnInspectSchema = document.getElementById("btn-inspect-schema");
 const btnDownloadOriginal = document.getElementById("btn-download-original");
 const btnDownloadModified = document.getElementById("btn-download-modified");
+const btnDeleteActiveFile = document.getElementById("btn-delete-active-file");
 const recentFilesList = document.getElementById("recent-files-list");
+const docCountBadge = document.getElementById("doc-count-badge");
 
-// Chat & Suggestion Elements
+// Right Panel (Suggestions & Insights Rail)
+const rightPanel = document.getElementById("right-panel");
+const btnToggleSuggestions = document.getElementById("btn-toggle-suggestions");
+const rightPanelSuggestions = document.getElementById("right-panel-suggestions");
+const rightPanelDocMeta = document.getElementById("right-panel-doc-meta");
+const rightPanelColumns = document.getElementById("right-panel-columns");
+const rpActiveDocTag = document.getElementById("rp-active-doc-tag");
+const rpDocType = document.getElementById("rp-doc-type");
+const rpDocDomain = document.getElementById("rp-doc-domain");
+const rpDocDims = document.getElementById("rp-doc-dims");
+const rpDocSize = document.getElementById("rp-doc-size");
+const rpColumnsList = document.getElementById("rp-columns-list");
+
+// Chat Elements
 const chatStream = document.getElementById("chat-stream");
 const welcomeHero = document.getElementById("welcome-hero");
-const dynamicHeroChips = document.getElementById("dynamic-hero-chips");
-const dynamicSuggestionsContainer = document.getElementById("dynamic-suggestions-container");
-const bottomSuggestionsBar = document.getElementById("bottom-suggestions-bar");
 const questionInput = document.getElementById("question-input");
 const btnSubmitQuestion = document.getElementById("btn-submit-question");
 const btnNewChat = document.getElementById("btn-new-chat");
@@ -65,6 +77,20 @@ function setupEventListeners() {
   btnHistoryView.addEventListener("click", openHistoryModal);
   btnLogout.addEventListener("click", logout);
 
+  if (btnDeleteActiveFile) {
+    btnDeleteActiveFile.addEventListener("click", () => {
+      if (activeFile) {
+        deleteDocumentById(activeFile.file_id || activeFile.id, activeFile.filename);
+      }
+    });
+  }
+
+  if (btnToggleSuggestions) {
+    btnToggleSuggestions.addEventListener("click", () => {
+      rightPanel.classList.toggle("collapsed");
+    });
+  }
+
   // Enter sends question (Shift+Enter inserts newline)
   questionInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -73,19 +99,19 @@ function setupEventListeners() {
     }
   });
 
-  // Drag and drop for upload
+  // Drag and drop upload zone
   const dropzone = document.getElementById("upload-dropzone");
   if (dropzone) {
     dropzone.addEventListener("dragover", (e) => {
       e.preventDefault();
-      dropzone.style.borderColor = "var(--color-primary)";
+      dropzone.style.borderColor = "var(--color-cyan)";
     });
     dropzone.addEventListener("dragleave", () => {
-      dropzone.style.borderColor = "#475569";
+      dropzone.style.borderColor = "#2d426b";
     });
     dropzone.addEventListener("drop", (e) => {
       e.preventDefault();
-      dropzone.style.borderColor = "#475569";
+      dropzone.style.borderColor = "#2d426b";
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         handleFileDirect(e.dataTransfer.files[0]);
       }
@@ -200,7 +226,7 @@ async function handleSignIn() {
 
     if (!res.ok) {
       if (res.status === 403) {
-        showNotification("Email unverified. Enter the code sent to your email.", "info");
+        showNotification("Email unverified. Enter verification code.", "info");
         showOTPView(email, res.headers.get("X-Dev-OTP"));
         return;
       }
@@ -271,7 +297,7 @@ async function handleVerifyOTP() {
     updateUserUI();
     loadRecentFiles();
     loadChatSessions();
-    showNotification("Account successfully activated! Welcome to Excel AI Assistant.", "success");
+    showNotification("Account successfully activated! Welcome to Excel AI Studio.", "success");
   } catch (err) {
     showNotification(err.message, "error");
   }
@@ -342,9 +368,9 @@ async function handleFileDirect(file) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Spreadsheet upload failed.");
 
-    // Update state & UI
-    setActiveFile(data.metadata || data);
-    renderUploadConfirmation(data.metadata || data);
+    const meta = data.metadata || data;
+    setActiveFile(meta);
+    renderUploadConfirmation(meta);
     showNotification(data.message || `Uploaded ${data.filename}`, "success");
   } catch (err) {
     showNotification("Upload failed: " + err.message, "error");
@@ -355,10 +381,17 @@ function setActiveFile(fileMeta) {
   activeFile = fileMeta;
   activeFileCard.style.display = "flex";
 
-  const fileTypeLabel = fileMeta.file_type || "Spreadsheet Document";
-  fileTypePill.innerHTML = `<iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> ${escapeHtml(fileTypeLabel)}`;
+  // Hide the big welcome dropzone so no unwanted clutter is in chat
+  welcomeHero.style.display = "none";
+
+  const fileTypeLabel = fileMeta.file_type || "Microsoft Excel (.xlsx)";
+  
+  // Document Name
   fileNameDisplay.innerText = fileMeta.filename;
   fileSizeDisplay.innerText = formatBytes(fileMeta.file_size || 0);
+
+  // Document Type Shown DIRECTLY Below Document Name
+  fileTypeDisplay.innerHTML = `<iconify-icon icon="lucide:file-badge"></iconify-icon> ${escapeHtml(fileTypeLabel)}`;
 
   // Stats
   const rows = fileMeta.total_rows || 0;
@@ -366,89 +399,134 @@ function setActiveFile(fileMeta) {
   fileStatRows.innerHTML = `<iconify-icon icon="lucide:rows-3"></iconify-icon> ${rows.toLocaleString()} rows`;
   fileStatCols.innerHTML = `<iconify-icon icon="lucide:columns-3"></iconify-icon> ${cols.toLocaleString()} cols`;
 
-  // Sheet Selector
+  // Worksheets Selector
   sheetDropdown.innerHTML = "";
   const sheets = fileMeta.sheet_names || [];
   sheets.forEach((sheet) => {
     const opt = document.createElement("option");
     opt.value = sheet;
-    opt.innerText = `Worksheet: ${sheet}`;
+    opt.innerText = `Sheet: ${sheet}`;
     sheetDropdown.appendChild(opt);
   });
 
-  btnDownloadOriginal.href = `/api/excel/${fileMeta.file_id || fileMeta.id}/download`;
+  const fileId = fileMeta.file_id || fileMeta.id;
+  btnDownloadOriginal.href = `/api/excel/${fileId}/download`;
   activeSheetPill.innerHTML = `<iconify-icon icon="lucide:check-circle-2" style="color: var(--color-success);"></iconify-icon> ${escapeHtml(fileMeta.filename)}`;
 
-  // Update Dynamic Suggestions
-  updateDynamicSuggestions(fileMeta.dynamic_suggestions || []);
+  // Populate Right-Side Rail (Suggestions & Document Overview)
+  updateRightPanel(fileMeta);
 
-  // Refresh database files list
+  // Refresh recent documents from database
   loadRecentFiles();
 }
 
+// Update the Right-Side Rail with Dynamic Questions and Metadata
+function updateRightPanel(meta) {
+  rpActiveDocTag.innerText = meta.filename ? meta.filename.substring(0, 16) + '...' : 'Active';
+
+  // 1. Dynamic Questions on Right Side
+  const suggestions = meta.dynamic_suggestions || [];
+  rightPanelSuggestions.innerHTML = "";
+
+  if (suggestions.length === 0) {
+    rightPanelSuggestions.innerHTML = `
+      <div class="empty-suggestions-hint">
+        <iconify-icon icon="lucide:sparkles" width="28" height="28" style="color: var(--color-cyan);"></iconify-icon>
+        <p>No suggestions available for this document.</p>
+      </div>
+    `;
+  } else {
+    suggestions.forEach(q => {
+      const card = document.createElement("div");
+      card.className = "suggested-question-card";
+      card.innerHTML = `
+        <iconify-icon icon="lucide:sparkles"></iconify-icon>
+        <span>${escapeHtml(q)}</span>
+      `;
+      card.onclick = () => askDynamicQuestion(q);
+      rightPanelSuggestions.appendChild(card);
+    });
+  }
+
+  // 2. Document Overview Metadata
+  rightPanelDocMeta.style.display = "block";
+  rpDocType.innerText = meta.file_type || "Excel / CSV";
+  rpDocDomain.innerText = meta.inferred_domain || "Tabular Dataset";
+  rpDocDims.innerText = `${(meta.total_rows || 0).toLocaleString()} rows × ${(meta.total_columns || 0)} cols`;
+  rpDocSize.innerText = formatBytes(meta.file_size || 0);
+
+  // 3. Columns Explorer
+  const sheets = meta.sheets || {};
+  const currentSheet = sheetDropdown.value;
+  const sheetMeta = sheets[currentSheet] || Object.values(sheets)[0];
+
+  if (sheetMeta && sheetMeta.columns) {
+    rightPanelColumns.style.display = "block";
+    rpColumnsList.innerHTML = "";
+    sheetMeta.columns.forEach(col => {
+      if (strStartsWith(col.name, "Unnamed:") || strStartsWith(col.name, "Col_")) return;
+      const pill = document.createElement("span");
+      const typeClass = col.data_type === "numeric" ? "type-numeric" : (col.data_type === "datetime" ? "type-datetime" : "type-text");
+      pill.className = `col-pill-badge ${typeClass}`;
+      pill.innerHTML = `<iconify-icon icon="lucide:tag" width="12" height="12"></iconify-icon> ${escapeHtml(col.name)} <small style="opacity: 0.7;">(${col.data_type})</small>`;
+      rpColumnsList.appendChild(pill);
+    });
+  } else {
+    rightPanelColumns.style.display = "none";
+  }
+
+  // Ensure right panel is visible
+  rightPanel.classList.remove("collapsed");
+}
+
+function strStartsWith(str, prefix) {
+  return str && String(str).startsWith(prefix);
+}
+
 function renderUploadConfirmation(meta) {
-  // Hide welcome dropzone and show chat confirmation card
   welcomeHero.style.display = "none";
 
   const row = document.createElement("div");
   row.className = "message-row assistant";
 
-  const suggestions = meta.dynamic_suggestions || [];
-  const chipsHtml = suggestions.map(q => `
-    <button class="suggestion-chip" onclick="askDynamicQuestion('${escapeHtml(q)}')">
-      <iconify-icon icon="lucide:sparkles" style="color: var(--color-primary);"></iconify-icon>
-      ${escapeHtml(q)}
-    </button>
-  `).join("");
-
   row.innerHTML = `
     <div class="message-avatar"><iconify-icon icon="lucide:bot" width="20" height="20"></iconify-icon></div>
     <div class="message-bubble">
-      <div style="font-weight: 700; color: #ffffff; margin-bottom: 4px;">
-        <iconify-icon icon="lucide:file-check" style="color: var(--color-success);"></iconify-icon> Document Uploaded & Analyzed
+      <div style="font-weight: 700; color: #ffffff; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+        <iconify-icon icon="lucide:check-circle-2" style="color: var(--color-success);"></iconify-icon>
+        <span>Spreadsheet Connected to Database</span>
       </div>
-      <p style="color: var(--color-text-muted); font-size: 13px; margin-bottom: 12px;">
-        Successfully parsed into your secured database. What would you like to calculate or visualize?
+      <p style="color: var(--color-text-muted); font-size: 13px; margin-bottom: 10px;">
+        Uploaded <b>${escapeHtml(meta.filename)}</b>. AI suggested analysis prompts are ready in the right-side rail.
       </p>
 
       <div class="upload-confirm-card">
         <div class="confirm-header">
           <div class="confirm-title">
-            <iconify-icon icon="lucide:table" style="color: var(--color-primary);"></iconify-icon>
+            <iconify-icon icon="lucide:file-spreadsheet" style="color: var(--color-cyan);"></iconify-icon>
             <span>${escapeHtml(meta.filename)}</span>
           </div>
-          <span class="file-type-pill">${escapeHtml(meta.file_type || "Excel / CSV")}</span>
+          <span class="doc-type-badge-below">${escapeHtml(meta.file_type || "Excel / CSV")}</span>
         </div>
 
         <div class="confirm-details-grid">
           <div class="confirm-detail-item">
-            <span class="label">Document Size</span>
-            <span class="value">${formatBytes(meta.file_size || 0)}</span>
+            <span class="label">Document Type</span>
+            <span class="value">${escapeHtml(meta.file_type || "Excel / CSV")}</span>
           </div>
           <div class="confirm-detail-item">
-            <span class="label">Detected Domain</span>
-            <span class="value">${escapeHtml(meta.inferred_domain || "Tabular Data")}</span>
+            <span class="label">Domain Category</span>
+            <span class="value">${escapeHtml(meta.inferred_domain || "Tabular Dataset")}</span>
           </div>
           <div class="confirm-detail-item">
-            <span class="label">Total Worksheets</span>
-            <span class="value">${(meta.sheet_names || []).length} sheet(s) (${(meta.sheet_names || []).join(", ")})</span>
+            <span class="label">Worksheets</span>
+            <span class="value">${(meta.sheet_names || []).length} sheet(s)</span>
           </div>
           <div class="confirm-detail-item">
-            <span class="label">Total Dimension</span>
-            <span class="value">${(meta.total_rows || 0).toLocaleString()} rows × ${(meta.total_columns || 0).toLocaleString()} columns</span>
+            <span class="label">Dimension</span>
+            <span class="value">${(meta.total_rows || 0).toLocaleString()} rows × ${(meta.total_columns || 0)} cols</span>
           </div>
         </div>
-
-        ${suggestions.length > 0 ? `
-          <div style="margin-top: 6px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--color-text-dim); text-transform: uppercase; margin-bottom: 8px;">
-              Dynamic Column-Based Suggestions:
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-              ${chipsHtml}
-            </div>
-          </div>
-        ` : ''}
       </div>
     </div>
   `;
@@ -457,44 +535,13 @@ function renderUploadConfirmation(meta) {
   chatStream.scrollTop = chatStream.scrollHeight;
 }
 
-function updateDynamicSuggestions(suggestions) {
-  if (!suggestions || suggestions.length === 0) {
-    bottomSuggestionsBar.style.display = "none";
-    dynamicSuggestionsContainer.style.display = "none";
-    return;
-  }
-
-  // Update Bottom Bar
-  bottomSuggestionsBar.innerHTML = "";
-  bottomSuggestionsBar.style.display = "flex";
-
-  suggestions.forEach(q => {
-    const chip = document.createElement("span");
-    chip.className = "suggestion-chip";
-    chip.innerHTML = `<iconify-icon icon="lucide:arrow-right" width="14" height="14"></iconify-icon> ${escapeHtml(q)}`;
-    chip.onclick = () => askDynamicQuestion(q);
-    bottomSuggestionsBar.appendChild(chip);
-  });
-
-  // Update Hero Chips
-  dynamicHeroChips.innerHTML = "";
-  dynamicSuggestionsContainer.style.display = "block";
-  suggestions.forEach(q => {
-    const chip = document.createElement("button");
-    chip.className = "suggestion-chip";
-    chip.innerHTML = `<iconify-icon icon="lucide:sparkles" style="color: var(--color-primary);"></iconify-icon> ${escapeHtml(q)}`;
-    chip.onclick = () => askDynamicQuestion(q);
-    dynamicHeroChips.appendChild(chip);
-  });
-}
-
 function askDynamicQuestion(q) {
   questionInput.value = q;
   sendQuestion();
 }
 
 // ==========================================================================
-// 3. DATABASE PERSISTED FILES & CHATS
+// 3. DATABASE PERSISTED FILES & DELETION CONTROLLER
 // ==========================================================================
 
 async function loadRecentFiles() {
@@ -505,10 +552,12 @@ async function loadRecentFiles() {
     const files = await res.json();
 
     recentFilesList.innerHTML = "";
+    if (docCountBadge) docCountBadge.innerText = files.length;
+
     if (files.length === 0) {
       recentFilesList.innerHTML = `
-        <div style="font-size: 12px; color: var(--color-text-dim); padding: 8px; text-align: center;">
-          No documents uploaded yet
+        <div style="font-size: 12px; color: var(--color-text-dim); padding: 12px; text-align: center;">
+          No stored documents yet
         </div>
       `;
       return;
@@ -516,18 +565,25 @@ async function loadRecentFiles() {
 
     files.forEach(f => {
       const item = document.createElement("div");
-      item.className = `recent-file-item ${activeFile && (activeFile.file_id === f.id || activeFile.id === f.id) ? 'active' : ''}`;
+      const isActive = activeFile && (activeFile.file_id === f.id || activeFile.id === f.id);
+      item.className = `recent-file-item ${isActive ? 'active' : ''}`;
       item.onclick = () => selectFileFromDatabase(f.id);
+
       item.innerHTML = `
-        <div class="item-title">
-          <iconify-icon icon="lucide:file-spreadsheet" style="color: var(--color-primary);"></iconify-icon>
-          ${escapeHtml(f.filename)}
+        <div class="item-info-col">
+          <div class="item-title" title="${escapeHtml(f.filename)}">
+            <iconify-icon icon="lucide:file-spreadsheet" style="color: var(--color-cyan); margin-right: 4px;"></iconify-icon>
+            ${escapeHtml(f.filename)}
+          </div>
+          <div class="item-meta">
+            <span>${formatBytes(f.file_size || 0)}</span>
+            <span>•</span>
+            <span>${escapeHtml(f.file_type ? f.file_type.split(" ")[0] : "Excel")}</span>
+          </div>
         </div>
-        <div class="item-meta">
-          <span>${formatBytes(f.file_size || 0)}</span>
-          <span>•</span>
-          <span>${escapeHtml(f.file_type || "Excel")}</span>
-        </div>
+        <button class="btn-item-delete" onclick="event.stopPropagation(); deleteDocumentById(${f.id}, '${escapeHtml(f.filename)}')" title="Delete Document">
+          <iconify-icon icon="lucide:trash-2" width="14" height="14"></iconify-icon>
+        </button>
       `;
       recentFilesList.appendChild(item);
     });
@@ -552,17 +608,60 @@ async function selectFileFromDatabase(fileId) {
   }
 }
 
+// Delete Document from Database & Disk Anytime
+async function deleteDocumentById(fileId, filename) {
+  if (!confirm(`Are you sure you want to delete "${filename}" from the database?`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/excel/${fileId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Failed to delete document.");
+
+    showNotification(`Deleted "${filename}" successfully.`, "success");
+
+    // If currently active file was deleted, reset state
+    if (activeFile && (activeFile.file_id === fileId || activeFile.id === fileId)) {
+      activeFile = null;
+      activeFileCard.style.display = "none";
+      activeSheetPill.innerHTML = `<iconify-icon icon="lucide:info"></iconify-icon> Ready for upload`;
+      welcomeHero.style.display = "block";
+      rightPanelDocMeta.style.display = "none";
+      rightPanelColumns.style.display = "none";
+      rightPanelSuggestions.innerHTML = `
+        <div class="empty-suggestions-hint">
+          <iconify-icon icon="lucide:file-question" width="28" height="28"></iconify-icon>
+          <p>Upload a spreadsheet to automatically generate AI analysis prompts.</p>
+        </div>
+      `;
+    }
+
+    loadRecentFiles();
+  } catch (err) {
+    showNotification("Error deleting document: " + err.message, "error");
+  }
+}
+
 // ==========================================================================
-// 4. CHAT & SPREADSHEET QUERY EXECUTION
+// 4. CHAT SESSIONS & DELETION CONTROLLER
 // ==========================================================================
 
 function startNewChat() {
   activeSessionId = null;
   chatStream.innerHTML = "";
-  chatStream.appendChild(welcomeHero);
-  welcomeHero.style.display = "block";
   chatTitleHeader.innerText = "Spreadsheet Intelligence";
   btnDownloadModified.style.display = "none";
+
+  if (!activeFile) {
+    chatStream.appendChild(welcomeHero);
+    welcomeHero.style.display = "block";
+  } else {
+    welcomeHero.style.display = "none";
+  }
 }
 
 async function sendQuestion() {
@@ -634,7 +733,7 @@ function appendLoadingBubble() {
     <div class="message-avatar"><iconify-icon icon="lucide:bot" width="20" height="20"></iconify-icon></div>
     <div class="message-bubble" style="color: var(--color-text-muted);">
       <iconify-icon icon="lucide:loader-2" class="spin" style="margin-right: 6px;"></iconify-icon>
-      Analyzing spreadsheet in database & calculating response...
+      Executing spreadsheet query & generating visualization...
     </div>
   `;
   chatStream.appendChild(row);
@@ -711,7 +810,7 @@ function appendAssistantMessage(data) {
     `;
   }
 
-  // Modified Excel Download Button
+  // Modified Excel Download Link
   if (data.modified_file_url) {
     innerContent += `
       <div style="margin-top: 10px;">
@@ -730,10 +829,7 @@ function appendAssistantMessage(data) {
   chatStream.scrollTop = chatStream.scrollHeight;
 }
 
-// ==========================================================================
-// 5. CHAT SESSIONS & PERSISTENCE
-// ==========================================================================
-
+// Load Chat Sessions from Database
 async function loadChatSessions() {
   if (!token) return;
   try {
@@ -744,7 +840,7 @@ async function loadChatSessions() {
 
     if (sessions.length === 0) {
       chatHistoryList.innerHTML = `
-        <div style="font-size: 12px; color: var(--color-text-dim); padding: 8px; text-align: center;">
+        <div style="font-size: 12px; color: var(--color-text-dim); padding: 12px; text-align: center;">
           No conversations yet
         </div>
       `;
@@ -756,11 +852,16 @@ async function loadChatSessions() {
       item.className = `history-item ${s.id === activeSessionId ? 'active' : ''}`;
       item.onclick = () => loadSession(s.id);
       item.innerHTML = `
-        <div class="item-title">${escapeHtml(s.title)}</div>
-        <div class="item-meta">
-          <span><iconify-icon icon="lucide:message-circle"></iconify-icon> ${s.message_count} msgs</span>
-          ${s.filename ? `<span>•</span><span>${escapeHtml(s.filename)}</span>` : ''}
+        <div class="item-info-col">
+          <div class="item-title">${escapeHtml(s.title)}</div>
+          <div class="item-meta">
+            <span><iconify-icon icon="lucide:message-circle"></iconify-icon> ${s.message_count} msgs</span>
+            ${s.filename ? `<span>•</span><span>${escapeHtml(s.filename)}</span>` : ''}
+          </div>
         </div>
+        <button class="btn-item-delete" onclick="event.stopPropagation(); deleteSessionById(${s.id})" title="Delete Conversation">
+          <iconify-icon icon="lucide:trash-2" width="14" height="14"></iconify-icon>
+        </button>
       `;
       chatHistoryList.appendChild(item);
     });
@@ -794,8 +895,29 @@ async function loadSession(sessionId) {
   }
 }
 
+// Delete Chat Session from Database
+async function deleteSessionById(sessionId) {
+  if (!confirm("Are you sure you want to delete this conversation?")) return;
+
+  try {
+    const res = await fetch(`/api/chat/sessions/${sessionId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error("Failed to delete session.");
+
+    showNotification("Conversation deleted.", "success");
+    if (activeSessionId === sessionId) {
+      startNewChat();
+    }
+    loadChatSessions();
+  } catch (err) {
+    showNotification("Error: " + err.message, "error");
+  }
+}
+
 // ==========================================================================
-// 6. MODALS (SCHEMA INSPECTOR & SQL HISTORY)
+// 5. MODALS (SCHEMA INSPECTOR & HISTORY DELETION)
 // ==========================================================================
 
 function openSchemaModal() {
@@ -835,9 +957,9 @@ function openSchemaModal() {
         <tbody>
           ${sheetMeta.columns.map(c => `
             <tr>
-              <td><b style="color: var(--color-primary-hover);">${c.column_letter}</b></td>
+              <td><b style="color: var(--color-cyan);">${c.column_letter}</b></td>
               <td><b>${escapeHtml(c.name)}</b></td>
-              <td><span class="file-type-pill" style="font-size: 10px;">${c.data_type}</span></td>
+              <td><span class="doc-type-badge-below" style="font-size: 10px; margin-top: 0;">${c.data_type}</span></td>
               <td>${c.non_null_count}</td>
               <td>${c.mean_val ? `Mean: ${c.mean_val}` : (c.min_val !== null ? `${c.min_val} ~ ${c.max_val}` : '-')}</td>
               <td style="color: var(--color-text-muted); font-size: 11px;">${escapeHtml(c.sample_values.slice(0, 3).join(", "))}</td>
@@ -856,6 +978,10 @@ function closeSchemaModal() {
 
 async function openHistoryModal() {
   historyModal.style.display = "flex";
+  await reloadHistoryModalContent();
+}
+
+async function reloadHistoryModalContent() {
   const container = document.getElementById("history-content-area");
   container.innerHTML = `<p style="color: var(--color-text-muted);">Loading SQL analysis records from database...</p>`;
 
@@ -864,7 +990,7 @@ async function openHistoryModal() {
     const records = await res.json();
 
     if (!records || records.length === 0) {
-      container.innerHTML = `<p style="color: var(--color-text-muted); text-align: center; padding: 20px;">No analysis history recorded in database yet.</p>`;
+      container.innerHTML = `<p style="color: var(--color-text-muted); text-align: center; padding: 24px;">No analysis history recorded in database yet.</p>`;
       return;
     }
 
@@ -876,9 +1002,10 @@ async function openHistoryModal() {
               <th>ID</th>
               <th>Question Asked</th>
               <th>Operation</th>
-              <th>Excel Formula</th>
-              <th>Chart Image</th>
-              <th>Timestamp</th>
+              <th>Formula</th>
+              <th>Chart</th>
+              <th>Time</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -886,10 +1013,15 @@ async function openHistoryModal() {
               <tr>
                 <td>#${r.id}</td>
                 <td style="font-weight: 600;">${escapeHtml(r.question)}</td>
-                <td><span class="file-type-pill" style="font-size: 10px;">${r.operation_type}</span></td>
+                <td><span class="doc-type-badge-below" style="font-size: 10px; margin-top: 0;">${r.operation_type}</span></td>
                 <td><code>${r.formula_generated ? escapeHtml(r.formula_generated) : '-'}</code></td>
-                <td>${r.chart_path ? `<a href="${r.chart_path}" target="_blank" style="color: var(--color-primary-hover);">View Chart</a>` : '-'}</td>
+                <td>${r.chart_path ? `<a href="${r.chart_path}" target="_blank" style="color: var(--color-cyan);">View</a>` : '-'}</td>
                 <td style="font-size: 11px; color: var(--color-text-dim);">${new Date(r.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                <td>
+                  <button class="btn-row-delete" onclick="deleteHistoryItem(${r.id})" title="Delete Record">
+                    <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                  </button>
+                </td>
               </tr>
             `).join("")}
           </tbody>
@@ -901,12 +1033,47 @@ async function openHistoryModal() {
   }
 }
 
+// Clear All Analysis History from Database
+async function clearAllAnalysisHistory() {
+  if (!confirm("Are you sure you want to clear all analysis history records?")) return;
+
+  try {
+    const res = await fetch("/api/history", {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Failed to clear history.");
+
+    showNotification(data.message || "History cleared.", "success");
+    reloadHistoryModalContent();
+  } catch (err) {
+    showNotification("Error: " + err.message, "error");
+  }
+}
+
+// Delete Single Analysis Record
+async function deleteHistoryItem(historyId) {
+  try {
+    const res = await fetch(`/api/history/${historyId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error("Failed to delete record.");
+
+    showNotification("Record deleted.", "success");
+    reloadHistoryModalContent();
+  } catch (err) {
+    showNotification("Error: " + err.message, "error");
+  }
+}
+
 function closeHistoryModal() {
   historyModal.style.display = "none";
 }
 
 // ==========================================================================
-// 7. UTILITIES
+// 6. UTILITIES
 // ==========================================================================
 
 function copyToClipboard(text) {

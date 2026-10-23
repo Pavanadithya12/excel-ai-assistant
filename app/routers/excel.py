@@ -275,3 +275,36 @@ def download_modified_file(file_id: int, db: Session = Depends(get_db)):
         filename=f"ai_enhanced_{file_record.filename}",
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+@router.delete("/{file_id}", response_model=dict)
+def delete_uploaded_file(
+    file_id: int,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
+    """Deletes an uploaded Excel file and associated assets from database and disk"""
+    query = db.query(ExcelFile).filter(ExcelFile.id == file_id)
+    if current_user:
+        query = query.filter((ExcelFile.user_id == current_user.id) | (ExcelFile.user_id == None))
+    file_record = query.first()
+    if not file_record:
+        raise HTTPException(status_code=404, detail="Excel file not found.")
+
+    filename = file_record.filename
+    # Delete original physical file
+    if file_record.filepath and os.path.exists(file_record.filepath):
+        try:
+            os.remove(file_record.filepath)
+        except Exception:
+            pass
+
+    # Delete modified file
+    if file_record.modified_filepath and os.path.exists(file_record.modified_filepath):
+        try:
+            os.remove(file_record.modified_filepath)
+        except Exception:
+            pass
+
+    db.delete(file_record)
+    db.commit()
+    return {"message": f"Document '{filename}' deleted successfully.", "file_id": file_id}

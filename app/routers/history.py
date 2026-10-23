@@ -61,6 +61,19 @@ def get_history_detail(history_id: int, db: Session = Depends(get_db)):
         "created_at": record.created_at
     }
 
+@router.delete("", response_model=dict)
+def clear_all_history(
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
+    """Clears all analysis history records for current user from database"""
+    query = db.query(AnalysisHistory)
+    if current_user:
+        query = query.filter((AnalysisHistory.user_id == current_user.id) | (AnalysisHistory.user_id == None))
+    deleted_count = query.delete(synchronize_session=False)
+    db.commit()
+    return {"message": f"Cleared {deleted_count} analysis record(s)."}
+
 @router.delete("/{history_id}")
 def delete_history_record(history_id: int, db: Session = Depends(get_db)):
     """Deletes an analysis history item"""

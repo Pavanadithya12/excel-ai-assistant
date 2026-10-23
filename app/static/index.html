@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Excel Assistant | Dynamic Spreadsheet Intelligence</title>
+  <title>AI Excel Assistant | Futuristic Spreadsheet Intelligence</title>
   
   <!-- Iconify Framework for standardized crisp icons -->
   <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
   
   <!-- Application Stylesheet with Coolors palette & Pattern Monster backgrounds -->
-  <link rel="stylesheet" href="/static/css/style.css?v=2.2">
+  <link rel="stylesheet" href="/static/css/style.css?v=3.0">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
           <iconify-icon icon="lucide:table-properties" width="32" height="32"></iconify-icon>
         </div>
         <h1>Excel AI Assistant</h1>
-        <p class="auth-subtitle">Dynamic Spreadsheet Analytics, Formulas & Database Intelligence</p>
+        <p class="auth-subtitle">Futuristic Spreadsheet Analytics, Formulas & Database Intelligence</p>
       </div>
 
       <!-- Auth Switcher Tabs -->
@@ -142,11 +142,11 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MAIN APPLICATION WORKSPACE (Displayed when authenticated) -->
+  <!-- MAIN APPLICATION WORKSPACE (Futuristic 3-Column Studio) -->
   <!-- ======================================================== -->
   <div class="app-container" id="app-container" style="display: none;">
     
-    <!-- Sidebar -->
+    <!-- 1. Left Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo-badge">
@@ -154,8 +154,8 @@
             <iconify-icon icon="lucide:file-spreadsheet" width="22" height="22"></iconify-icon>
           </div>
           <div class="logo-text">
-            <h2>Excel AI Assistant</h2>
-            <span>Database-Driven • LLM Intelligence</span>
+            <h2>Excel AI Studio</h2>
+            <span>Database-Driven • AI Intelligence</span>
           </div>
         </div>
       </div>
@@ -175,17 +175,23 @@
 
       <!-- Active File Card (Populated Dynamically) -->
       <div class="active-file-card" id="active-file-card" style="display: none;">
-        <div class="file-type-badge-row">
-          <span class="file-type-pill" id="file-type-pill">
-            <iconify-icon icon="lucide:file-text"></iconify-icon> Excel Workbook
-          </span>
-          <span class="file-meta-pill" id="file-size-display">0 KB</span>
+        <div class="file-card-top-row">
+          <span class="file-status-indicator"><span class="pulse-dot"></span> Active Document</span>
+          <span class="file-size-pill" id="file-size-display">0 KB</span>
         </div>
         
-        <div class="file-info-row">
+        <!-- Document Name -->
+        <div class="file-name-row">
+          <iconify-icon icon="lucide:file-spreadsheet" class="file-icon-accent"></iconify-icon>
           <span class="file-name-label" id="file-name-display">workbook.xlsx</span>
         </div>
 
+        <!-- Document Type Display (Shown DIRECTLY below document name) -->
+        <div class="doc-type-badge-below" id="file-type-display">
+          <iconify-icon icon="lucide:file-badge"></iconify-icon> Microsoft Excel OpenXML (.xlsx)
+        </div>
+
+        <!-- Dimensions -->
         <div class="file-stats-row" id="file-stats-row">
           <span id="file-stat-rows"><iconify-icon icon="lucide:rows-3"></iconify-icon> 0 rows</span>
           <span id="file-stat-cols"><iconify-icon icon="lucide:columns-3"></iconify-icon> 0 cols</span>
@@ -197,27 +203,35 @@
 
         <div class="file-actions-row">
           <button class="btn-secondary" id="btn-inspect-schema" title="Inspect columns and data types">
-            <iconify-icon icon="lucide:eye"></iconify-icon> Inspect Schema
+            <iconify-icon icon="lucide:eye"></iconify-icon> Schema
           </button>
           <a class="btn-secondary btn-icon-only" id="btn-download-original" href="#" target="_blank" title="Download Original File">
             <iconify-icon icon="lucide:download"></iconify-icon>
           </a>
+          <button class="btn-danger-outline btn-icon-only" id="btn-delete-active-file" title="Delete this Document from Database">
+            <iconify-icon icon="lucide:trash-2"></iconify-icon>
+          </button>
         </div>
       </div>
 
       <!-- Dynamic Recent Files from Database -->
-      <div class="sidebar-section-title">
-        <iconify-icon icon="lucide:files"></iconify-icon>
-        <span>Your Stored Documents</span>
+      <div class="sidebar-section-header">
+        <div class="section-title-left">
+          <iconify-icon icon="lucide:files"></iconify-icon>
+          <span>Stored Documents</span>
+        </div>
+        <span class="count-pill" id="doc-count-badge">0</span>
       </div>
       <div class="recent-files-list" id="recent-files-list">
         <!-- Dynamically loaded from database -->
       </div>
 
       <!-- Chat History from Database -->
-      <div class="sidebar-section-title">
-        <iconify-icon icon="lucide:message-square"></iconify-icon>
-        <span>Conversations</span>
+      <div class="sidebar-section-header">
+        <div class="section-title-left">
+          <iconify-icon icon="lucide:message-square"></iconify-icon>
+          <span>Conversations</span>
+        </div>
       </div>
       <div class="history-list" id="chat-history-list">
         <!-- Dynamically loaded from database -->
@@ -240,9 +254,9 @@
       </div>
     </aside>
 
-    <!-- Main Content Area -->
+    <!-- 2. Main Center Content Area (Chat & Execution) -->
     <main class="main-content">
-      <!-- Pattern Monster Subtle Texture -->
+      <!-- Pattern Monster Subtle Blueprint Texture -->
       <div class="workspace-pattern-bg" aria-hidden="true"></div>
 
       <!-- Top Navbar -->
@@ -255,7 +269,7 @@
         </div>
         
         <div class="navbar-actions">
-          <button class="btn-secondary" id="btn-history-view">
+          <button class="btn-secondary" id="btn-history-view" title="View SQL analysis records">
             <iconify-icon icon="lucide:history"></iconify-icon>
             <span>Analysis History</span>
           </button>
@@ -264,81 +278,46 @@
             <iconify-icon icon="lucide:file-output"></iconify-icon>
             <span>Download Enhanced Excel</span>
           </a>
+
+          <!-- Right Sidebar Toggle -->
+          <button class="btn-secondary" id="btn-toggle-suggestions" title="Toggle Document Insights & Suggestions">
+            <iconify-icon icon="lucide:sparkles" style="color: var(--color-primary-hover);"></iconify-icon>
+            <span>Insights Rail</span>
+          </button>
         </div>
       </header>
 
-      <!-- Chat Container / Output -->
+      <!-- Chat Container / Output Stream -->
       <div class="chat-container" id="chat-stream">
         
-        <!-- Dynamic Welcome / Upload Dropzone State -->
+        <!-- Clean Futuristic Initial State (Visible when no document loaded) -->
         <div class="welcome-hero" id="welcome-hero">
           <div class="welcome-icon-wrapper">
             <iconify-icon icon="lucide:sparkles" width="34" height="34"></iconify-icon>
           </div>
-          <h1>Ask Anything About Your Spreadsheets</h1>
-          <p>Upload any Excel (.xlsx, .xls) or CSV document. Ask questions in plain English to automatically execute formulas, compute aggregations, and render charts.</p>
+          <h1>AI Spreadsheet Intelligence</h1>
+          <p>Upload any Excel (.xlsx, .xls) or CSV document. Ask questions in natural language to automatically execute formulas, compute aggregations, and generate interactive charts.</p>
 
-          <!-- Upload Dropzone Card -->
+          <!-- Upload Dropzone -->
           <div class="upload-dropzone" id="upload-dropzone" onclick="document.getElementById('file-input').click()">
             <div class="dropzone-icon">
-              <iconify-icon icon="lucide:upload-cloud" width="40" height="40"></iconify-icon>
+              <iconify-icon icon="lucide:upload-cloud" width="44" height="44"></iconify-icon>
             </div>
-            <h3>Click to Browse or Drag & Drop File</h3>
+            <h3>Drop your spreadsheet here or click to browse</h3>
             <p>Supports Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv)</p>
-            <span class="dropzone-btn">Select File from Computer</span>
-          </div>
-
-          <!-- Feature Cards Grid -->
-          <div class="hero-features">
-            <div class="feature-box">
-              <div class="feature-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--color-primary);">
-                <iconify-icon icon="lucide:function-square" width="22" height="22"></iconify-icon>
-              </div>
-              <h4>Automated Formulas</h4>
-              <p>SUM, AVERAGE, IF, SUMIF, COUNTIF, XLOOKUP, percentage differences, and margin calculations.</p>
-            </div>
-            
-            <div class="feature-box">
-              <div class="feature-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--color-success);">
-                <iconify-icon icon="lucide:database" width="22" height="22"></iconify-icon>
-              </div>
-              <h4>Database-Backed Analytics</h4>
-              <p>Execute live Pandas aggregations, multi-column group-by, rankings, and statistical distributions.</p>
-            </div>
-            
-            <div class="feature-box">
-              <div class="feature-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--color-warning);">
-                <iconify-icon icon="lucide:bar-chart-3" width="22" height="22"></iconify-icon>
-              </div>
-              <h4>Dynamic Visualizations</h4>
-              <p>High-resolution bar, line, pie, and scatter charts generated directly from your uploaded data.</p>
-            </div>
-          </div>
-
-          <!-- Dynamic Questions Area (Filled upon file upload) -->
-          <div id="dynamic-suggestions-container" style="display: none; margin-top: 24px;">
-            <div class="suggestions-header">
-              <iconify-icon icon="lucide:sparkles" style="color: var(--color-primary);"></iconify-icon>
-              <span>Suggested Questions for Your Uploaded Document</span>
-            </div>
-            <div class="dynamic-chips-grid" id="dynamic-hero-chips">
-              <!-- Dynamically populated -->
-            </div>
+            <span class="dropzone-btn">
+              <iconify-icon icon="lucide:plus"></iconify-icon> Choose Spreadsheet
+            </span>
           </div>
         </div>
 
-      </div>
-
-      <!-- Quick Suggestion Bar at bottom -->
-      <div class="suggestions-bar" id="bottom-suggestions-bar" style="display: none;">
-        <!-- Dynamically injected chips -->
       </div>
 
       <!-- Chat Input Area -->
       <div class="chat-input-area">
         <div class="chat-input-box">
           <div class="input-options-row">
-            <label class="checkbox-label" title="Enable AI to perform live web research for benchmarks or market formulas">
+            <label class="checkbox-label" title="Enable AI to perform live web research for market benchmarks or formula syntax">
               <input type="checkbox" id="check-web-research">
               <span><iconify-icon icon="lucide:globe"></iconify-icon> Web Research</span>
             </label>
@@ -349,7 +328,7 @@
           </div>
           
           <div class="input-wrapper">
-            <textarea id="question-input" rows="1" placeholder="Ask a question about your uploaded spreadsheet..."></textarea>
+            <textarea id="question-input" rows="1" placeholder="Ask a question about your spreadsheet (e.g. 'What is the average Progress?')..."></textarea>
             <button class="btn-send" id="btn-submit-question" title="Send Question (Enter)">
               <iconify-icon icon="lucide:arrow-up" width="20" height="20"></iconify-icon>
             </button>
@@ -357,6 +336,68 @@
         </div>
       </div>
     </main>
+
+    <!-- 3. Right-Side Panel: Document Intelligence & AI Suggested Questions -->
+    <aside class="right-panel" id="right-panel">
+      <div class="right-panel-header">
+        <div class="panel-title">
+          <iconify-icon icon="lucide:sparkles" style="color: var(--color-primary-hover);"></iconify-icon>
+          <span>Suggested Questions</span>
+        </div>
+        <span class="panel-badge" id="rp-active-doc-tag">No Doc</span>
+      </div>
+
+      <div class="right-panel-content">
+        <!-- Suggested Questions Group (Right-Side Rail) -->
+        <div class="panel-section">
+          <div class="panel-section-title">
+            <iconify-icon icon="lucide:lightbulb"></iconify-icon> Click Question to Run
+          </div>
+          <div class="suggested-questions-list" id="right-panel-suggestions">
+            <div class="empty-suggestions-hint">
+              <iconify-icon icon="lucide:file-question" width="32" height="32" style="color: var(--color-text-dim);"></iconify-icon>
+              <p>Upload a spreadsheet to automatically generate AI analysis prompts based on your columns.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Metadata Card -->
+        <div class="panel-section" id="right-panel-doc-meta" style="display: none;">
+          <div class="panel-section-title">
+            <iconify-icon icon="lucide:file-check-2"></iconify-icon> Document Overview
+          </div>
+          <div class="doc-meta-card">
+            <div class="doc-meta-item">
+              <span class="meta-label">Format Type</span>
+              <span class="meta-val" id="rp-doc-type">-</span>
+            </div>
+            <div class="doc-meta-item">
+              <span class="meta-label">Domain</span>
+              <span class="meta-val" id="rp-doc-domain">-</span>
+            </div>
+            <div class="doc-meta-item">
+              <span class="meta-label">Dimensions</span>
+              <span class="meta-val" id="rp-doc-dims">-</span>
+            </div>
+            <div class="doc-meta-item">
+              <span class="meta-label">File Size</span>
+              <span class="meta-val" id="rp-doc-size">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columns Explorer -->
+        <div class="panel-section" id="right-panel-columns" style="display: none;">
+          <div class="panel-section-title">
+            <iconify-icon icon="lucide:columns-3"></iconify-icon> Column Headers & Types
+          </div>
+          <div class="columns-pills-wrap" id="rp-columns-list">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+      </div>
+    </aside>
+
   </div>
 
   <!-- ======================================================== -->
@@ -387,7 +428,12 @@
           <iconify-icon icon="lucide:history" width="22" height="22" style="color: var(--color-primary);"></iconify-icon>
           <h3>Database Analysis History</h3>
         </div>
-        <button class="close-btn" onclick="closeHistoryModal()" title="Close">&times;</button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="btn-danger-outline" id="btn-clear-history" onclick="clearAllAnalysisHistory()" title="Clear all history from database">
+            <iconify-icon icon="lucide:trash-2"></iconify-icon> Clear All
+          </button>
+          <button class="close-btn" onclick="closeHistoryModal()" title="Close">&times;</button>
+        </div>
       </div>
       <div id="history-content-area" class="modal-body-scroll">
         <!-- Rendered dynamically -->
@@ -396,6 +442,6 @@
   </div>
 
   <!-- Main JavaScript File -->
-  <script src="/static/js/app.js?v=2.2"></script>
+  <script src="/static/js/app.js?v=3.0"></script>
 </body>
 </html>

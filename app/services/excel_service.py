@@ -21,9 +21,48 @@ class ExcelService:
         return f"Spreadsheet Document ({ext})"
 
     @staticmethod
+    def _clean_dataframe_headers(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Detects if row 0 was not the actual header (e.g., title rows or lots of 'Unnamed:' columns)
+        and promotes the real header row, dropping empty leading rows/columns.
+        """
+        if df.empty:
+            return df
+
+        # Count how many columns start with 'Unnamed:'
+        unnamed_count = sum(1 for c in df.columns if str(c).startswith("Unnamed:"))
+        if unnamed_count > len(df.columns) / 2:
+            # Check the first 8 rows to find the row with the most non-null valid string cells
+            best_row_idx = None
+            max_valid_headers = 0
+            for r_idx in range(min(8, len(df))):
+                row_vals = df.iloc[r_idx]
+                valid_count = sum(1 for v in row_vals if pd.notnull(v) and str(v).strip() and not str(v).startswith("Unnamed:"))
+                if valid_count > max_valid_headers and valid_count >= 2:
+                    max_valid_headers = valid_count
+                    best_row_idx = r_idx
+
+            if best_row_idx is not None:
+                new_headers = []
+                for idx, v in enumerate(df.iloc[best_row_idx]):
+                    name = str(v).strip() if pd.notnull(v) and str(v).strip() else f"Col_{idx+1}"
+                    new_headers.append(name)
+                df = df.iloc[best_row_idx + 1:].copy().reset_index(drop=True)
+                df.columns = new_headers
+                # Drop columns that are completely all-NaN
+                df = df.dropna(axis=1, how="all")
+                df = df.dropna(how="all").reset_index(drop=True)
+
+        # Clean column names (strip whitespace and remove pure Unnamed if possible)
+        df.columns = [str(c).strip() for c in df.columns]
+        return df
+
+    @staticmethod
     def infer_domain(columns: List[str]) -> str:
         """Infers the business/data domain from column names"""
-        col_str = " ".join([c.lower() for c in columns])
+        col_str = " ".join([c.lower() for c in columns if not str(c).startswith("Unnamed:")])
+        if any(k in col_str for k in ["project", "task", "assigned", "progress", "days required", "deadline"]):
+            return "Project Management & Operations"
         if any(k in col_str for k in ["revenue", "profit", "margin", "cost", "tax", "budget", "balance"]):
             return "Financial & Accounting"
         if any(k in col_str for k in ["sale", "order", "product", "customer", "quantity", "discount"]):
@@ -38,25 +77,31 @@ class ExcelService:
 
     @staticmethod
     def generate_dynamic_suggestions(sheets_data: Dict[str, Any]) -> List[str]:
-        """Generates dynamic queries tailored directly to actual column names"""
+        """Generates dynamic queries tailored directly to actual column names, ignoring dummy Unnamed columns"""
         suggestions = []
         if not sheets_data:
             return ["What is the total count of rows?", "Summarize this spreadsheet."]
 
         first_sheet = next(iter(sheets_data.values()))
         cols = first_sheet.get("columns", [])
-        numeric_cols = [c["name"] for c in cols if c.get("data_type") == "numeric"]
-        text_cols = [c["name"] for c in cols if c.get("data_type") == "text"]
-        datetime_cols = [c["name"] for c in cols if c.get("data_type") == "datetime"]
+        
+        # Filter out any column named Unnamed:* or Col_*
+        clean_cols = [c for c in cols if not str(c.get("name", "")).startswith("Unnamed:") and not str(c.get("name", "")).startswith("Col_")]
+        if not clean_cols:
+            clean_cols = cols
 
-        # 1. Total metric
+        numeric_cols = [c["name"] for c in clean_cols if c.get("data_type") == "numeric"]
+        text_cols = [c["name"] for c in clean_cols if c.get("data_type") == "text"]
+        datetime_cols = [c["name"] for c in clean_cols if c.get("data_type") == "datetime"]
+
+        # 1. Total or Average metric
         if numeric_cols:
+            suggestions.append(f"What is the average {numeric_cols[0]}?")
             suggestions.append(f"What is the total {numeric_cols[0]}?")
-            suggestions.append(f"Calculate the average {numeric_cols[0]}.")
 
         # 2. Group by / Categorical comparison
         if numeric_cols and text_cols:
-            suggestions.append(f"Calculate the total {numeric_cols[0]} for each {text_cols[0]}.")
+            suggestions.append(f"Calculate the average {numeric_cols[0]} for each {text_cols[0]}.")
             suggestions.append(f"Create a bar chart comparing {numeric_cols[0]} by {text_cols[0]}.")
             suggestions.append(f"Which {text_cols[0]} has the highest {numeric_cols[0]}?")
 
@@ -66,11 +111,11 @@ class ExcelService:
 
         # 4. Formula suggestion
         if numeric_cols:
-            suggestions.append(f"Give me an Excel formula to sum {numeric_cols[0]}.")
+            suggestions.append(f"Give me an Excel formula to calculate the average of {numeric_cols[0]}.")
 
         # Fallback if too few
         if len(suggestions) < 3:
-            suggestions.append("Summarize the key columns and missing values.")
+            suggestions.append("Summarize key column distributions and null values.")
 
         return suggestions[:6]
 
@@ -88,6 +133,7 @@ class ExcelService:
         # Check if CSV
         if filepath.lower().endswith(".csv"):
             df = pd.read_csv(filepath)
+            df = ExcelService._clean_dataframe_headers(df)
             sheet_names = ["Sheet1"]
             sheets_data = {"Sheet1": ExcelService._extract_sheet_metadata(df, "Sheet1")}
         else:
@@ -96,6 +142,7 @@ class ExcelService:
             sheets_data = {}
             for sheet in sheet_names:
                 df = pd.read_excel(filepath, sheet_name=sheet, engine="openpyxl")
+                df = ExcelService._clean_dataframe_headers(df)
                 sheets_data[sheet] = ExcelService._extract_sheet_metadata(df, sheet)
 
         total_rows = sum(s["row_count"] for s in sheets_data.values())
@@ -201,12 +248,13 @@ class ExcelService:
     def get_dataframe(filepath: str, sheet_name: Optional[str] = None) -> Tuple[pd.DataFrame, str]:
         """Loads DataFrame and returns (dataframe, sheet_name_used)"""
         if filepath.lower().endswith(".csv"):
-            return pd.read_csv(filepath), "Sheet1"
+            df = pd.read_csv(filepath)
+            return ExcelService._clean_dataframe_headers(df), "Sheet1"
             
         excel_file = pd.ExcelFile(filepath, engine="openpyxl")
         target_sheet = sheet_name if sheet_name and sheet_name in excel_file.sheet_names else excel_file.sheet_names[0]
         df = pd.read_excel(filepath, sheet_name=target_sheet, engine="openpyxl")
-        return df, target_sheet
+        return ExcelService._clean_dataframe_headers(df), target_sheet
 
     @staticmethod
     def get_column_letter_for_name(filepath: str, sheet_name: str, col_name: str) -> Optional[str]:
