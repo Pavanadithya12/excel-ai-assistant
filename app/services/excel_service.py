@@ -9,13 +9,81 @@ from openpyxl.utils import get_column_letter
 
 class ExcelService:
     @staticmethod
+    def detect_file_type(filepath: str) -> str:
+        """Identifies human-readable document type from file extension"""
+        ext = os.path.splitext(filepath)[1].lower()
+        if ext == ".xlsx":
+            return "Microsoft Excel OpenXML (.xlsx)"
+        elif ext == ".xls":
+            return "Microsoft Excel Binary 97-2003 (.xls)"
+        elif ext == ".csv":
+            return "Comma-Separated Values (.csv)"
+        return f"Spreadsheet Document ({ext})"
+
+    @staticmethod
+    def infer_domain(columns: List[str]) -> str:
+        """Infers the business/data domain from column names"""
+        col_str = " ".join([c.lower() for c in columns])
+        if any(k in col_str for k in ["revenue", "profit", "margin", "cost", "tax", "budget", "balance"]):
+            return "Financial & Accounting"
+        if any(k in col_str for k in ["sale", "order", "product", "customer", "quantity", "discount"]):
+            return "Sales & E-Commerce"
+        if any(k in col_str for k in ["inventory", "stock", "warehouse", "sku", "supplier", "shipping"]):
+            return "Inventory & Supply Chain"
+        if any(k in col_str for k in ["employee", "salary", "department", "hire_date", "payroll", "designation"]):
+            return "HR & Workforce"
+        if any(k in col_str for k in ["patient", "diagnosis", "dosage", "treatment", "doctor", "hospital"]):
+            return "Healthcare & Clinical"
+        return "Tabular Analytics Dataset"
+
+    @staticmethod
+    def generate_dynamic_suggestions(sheets_data: Dict[str, Any]) -> List[str]:
+        """Generates dynamic queries tailored directly to actual column names"""
+        suggestions = []
+        if not sheets_data:
+            return ["What is the total count of rows?", "Summarize this spreadsheet."]
+
+        first_sheet = next(iter(sheets_data.values()))
+        cols = first_sheet.get("columns", [])
+        numeric_cols = [c["name"] for c in cols if c.get("data_type") == "numeric"]
+        text_cols = [c["name"] for c in cols if c.get("data_type") == "text"]
+        datetime_cols = [c["name"] for c in cols if c.get("data_type") == "datetime"]
+
+        # 1. Total metric
+        if numeric_cols:
+            suggestions.append(f"What is the total {numeric_cols[0]}?")
+            suggestions.append(f"Calculate the average {numeric_cols[0]}.")
+
+        # 2. Group by / Categorical comparison
+        if numeric_cols and text_cols:
+            suggestions.append(f"Calculate the total {numeric_cols[0]} for each {text_cols[0]}.")
+            suggestions.append(f"Create a bar chart comparing {numeric_cols[0]} by {text_cols[0]}.")
+            suggestions.append(f"Which {text_cols[0]} has the highest {numeric_cols[0]}?")
+
+        # 3. Time-series / Line chart
+        if datetime_cols and numeric_cols:
+            suggestions.append(f"Show trend of {numeric_cols[0]} over time as a line chart.")
+
+        # 4. Formula suggestion
+        if numeric_cols:
+            suggestions.append(f"Give me an Excel formula to sum {numeric_cols[0]}.")
+
+        # Fallback if too few
+        if len(suggestions) < 3:
+            suggestions.append("Summarize the key columns and missing values.")
+
+        return suggestions[:6]
+
+    @staticmethod
     def inspect_file(filepath: str) -> Dict[str, Any]:
         """
         Inspects an Excel or CSV file and extracts sheet names, columns, headers,
-        inferred data types, basic summary statistics, and preview rows.
+        inferred data types, basic summary statistics, preview rows, and dynamic questions.
         """
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"File not found: {filepath}")
+
+        file_type = ExcelService.detect_file_type(filepath)
 
         # Check if CSV
         if filepath.lower().endswith(".csv"):
@@ -30,9 +98,24 @@ class ExcelService:
                 df = pd.read_excel(filepath, sheet_name=sheet, engine="openpyxl")
                 sheets_data[sheet] = ExcelService._extract_sheet_metadata(df, sheet)
 
+        total_rows = sum(s["row_count"] for s in sheets_data.values())
+        total_columns = sum(s["column_count"] for s in sheets_data.values())
+        
+        all_cols = []
+        for s in sheets_data.values():
+            all_cols.extend([c["name"] for c in s.get("columns", [])])
+
+        inferred_domain = ExcelService.infer_domain(all_cols)
+        dynamic_suggestions = ExcelService.generate_dynamic_suggestions(sheets_data)
+
         return {
+            "file_type": file_type,
             "sheet_names": sheet_names,
-            "sheets": sheets_data
+            "sheets": sheets_data,
+            "total_rows": total_rows,
+            "total_columns": total_columns,
+            "inferred_domain": inferred_domain,
+            "dynamic_suggestions": dynamic_suggestions
         }
 
     @staticmethod

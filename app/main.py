@@ -17,20 +17,9 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: ensure directories exist
+    # Startup: ensure upload and chart directories exist
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     os.makedirs(settings.CHARTS_DIR, exist_ok=True)
-    os.makedirs("sample_data", exist_ok=True)
-    
-    # Check if sample data exists; if not, generate it
-    sample_path = "sample_data/sample_sales_data.xlsx"
-    if not os.path.exists(sample_path):
-        try:
-            from sample_data.create_sample_excel import generate_sample_sales_data
-            generate_sample_sales_data(sample_path)
-        except Exception as e:
-            print(f"Notice: Could not auto-generate sample data: {e}")
-            
     yield
     # Shutdown logic if any
 

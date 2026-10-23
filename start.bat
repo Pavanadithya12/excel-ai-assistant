@@ -51,13 +51,7 @@ if not exist ".env" (
     copy .env.example .env >nul
 )
 
-REM 5. Ensure sample dataset exists
-if not exist "sample_data\sample_sales_data.xlsx" (
-    echo [*] Generating sample Excel dataset...
-    .\.venv\Scripts\python.exe sample_data\create_sample_excel.py
-)
-
-REM 6. Launch browser in 2 seconds in background
+REM 5. Launch browser in 2 seconds in background
 echo [*] Launching web browser at http://127.0.0.1:8000 ...
 start "" cmd /c "timeout /t 2 /nobreak >nul && start http://127.0.0.1:8000"
 

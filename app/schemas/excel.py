@@ -24,8 +24,13 @@ class ExcelMetadataResponse(BaseModel):
     file_id: int
     filename: str
     file_size: int
+    file_type: Optional[str] = "Microsoft Excel Workbook (.xlsx)"
     sheet_names: List[str]
     sheets: Dict[str, SheetMetadata]
+    total_rows: Optional[int] = 0
+    total_columns: Optional[int] = 0
+    inferred_domain: Optional[str] = "Tabular Dataset"
+    dynamic_suggestions: Optional[List[str]] = []
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -34,6 +39,7 @@ class ExcelUploadResponse(BaseModel):
     file_id: int
     filename: str
     file_size: int
+    file_type: Optional[str] = "Microsoft Excel Workbook (.xlsx)"
     sheet_names: List[str]
     metadata: ExcelMetadataResponse
     message: str = "Excel file uploaded and analyzed successfully"

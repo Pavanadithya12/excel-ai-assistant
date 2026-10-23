@@ -53,6 +53,11 @@ async def upload_excel_file(
         raise HTTPException(status_code=400, detail=f"Failed to inspect spreadsheet: {str(e)}")
 
     sheet_names_list = inspection["sheet_names"]
+    file_type = inspection.get("file_type") or excel_service.detect_file_type(filename)
+    total_rows = inspection.get("total_rows", 0)
+    total_columns = inspection.get("total_columns", 0)
+    inferred_domain = inspection.get("inferred_domain", "Tabular Dataset")
+    dynamic_suggestions = inspection.get("dynamic_suggestions", [])
 
     # Store in database
     excel_record = ExcelFile(
@@ -61,6 +66,7 @@ async def upload_excel_file(
         stored_filename=unique_name,
         filepath=file_path,
         file_size=file_size,
+        file_type=file_type,
         sheet_names=json.dumps(sheet_names_list),
         metadata_json=json.dumps(inspection)
     )
@@ -72,8 +78,13 @@ async def upload_excel_file(
         file_id=excel_record.id,
         filename=excel_record.filename,
         file_size=excel_record.file_size,
+        file_type=file_type,
         sheet_names=sheet_names_list,
         sheets=inspection["sheets"],
+        total_rows=total_rows,
+        total_columns=total_columns,
+        inferred_domain=inferred_domain,
+        dynamic_suggestions=dynamic_suggestions,
         created_at=excel_record.created_at
     )
 
@@ -81,9 +92,10 @@ async def upload_excel_file(
         "file_id": excel_record.id,
         "filename": excel_record.filename,
         "file_size": excel_record.file_size,
+        "file_type": file_type,
         "sheet_names": sheet_names_list,
         "metadata": metadata_resp,
-        "message": f"Successfully analyzed {len(sheet_names_list)} sheet(s) and {sum(s['column_count'] for s in inspection['sheets'].values())} column(s)."
+        "message": f"Successfully analyzed {file_type} with {len(sheet_names_list)} sheet(s), {total_rows} row(s), and {total_columns} column(s)."
     }
 
 @router.post("/load-sample", response_model=ExcelUploadResponse)
@@ -100,28 +112,36 @@ def load_sample_file(
     # Check if already in db
     existing = db.query(ExcelFile).filter(ExcelFile.filename == "sample_sales_data.xlsx").first()
     if existing and os.path.exists(existing.filepath):
-        inspection = json.loads(existing.metadata_json)
-        sheet_names_list = json.loads(existing.sheet_names)
+        inspection = json.loads(existing.metadata_json) if existing.metadata_json else {}
+        sheet_names_list = json.loads(existing.sheet_names) if existing.sheet_names else []
+        file_type = existing.file_type or inspection.get("file_type") or excel_service.detect_file_type(existing.filename)
         metadata_resp = ExcelMetadataResponse(
             file_id=existing.id,
             filename=existing.filename,
             file_size=existing.file_size,
+            file_type=file_type,
             sheet_names=sheet_names_list,
-            sheets=inspection["sheets"],
+            sheets=inspection.get("sheets", {}),
+            total_rows=inspection.get("total_rows", 0),
+            total_columns=inspection.get("total_columns", 0),
+            inferred_domain=inspection.get("inferred_domain", "Sales & E-Commerce"),
+            dynamic_suggestions=inspection.get("dynamic_suggestions", []),
             created_at=existing.created_at
         )
         return {
             "file_id": existing.id,
             "filename": existing.filename,
             "file_size": existing.file_size,
+            "file_type": file_type,
             "sheet_names": sheet_names_list,
             "metadata": metadata_resp,
-            "message": "Sample sales dataset loaded successfully."
+            "message": "Dataset loaded successfully."
         }
 
     inspection = excel_service.inspect_file(sample_path)
     sheet_names_list = inspection["sheet_names"]
     file_size = os.path.getsize(sample_path)
+    file_type = inspection.get("file_type") or excel_service.detect_file_type(sample_path)
 
     excel_record = ExcelFile(
         user_id=current_user.id if current_user else None,
@@ -129,6 +149,7 @@ def load_sample_file(
         stored_filename="sample_sales_data.xlsx",
         filepath=sample_path,
         file_size=file_size,
+        file_type=file_type,
         sheet_names=json.dumps(sheet_names_list),
         metadata_json=json.dumps(inspection)
     )
@@ -140,17 +161,23 @@ def load_sample_file(
         file_id=excel_record.id,
         filename=excel_record.filename,
         file_size=excel_record.file_size,
+        file_type=file_type,
         sheet_names=sheet_names_list,
         sheets=inspection["sheets"],
+        total_rows=inspection.get("total_rows", 0),
+        total_columns=inspection.get("total_columns", 0),
+        inferred_domain=inspection.get("inferred_domain", "Sales & E-Commerce"),
+        dynamic_suggestions=inspection.get("dynamic_suggestions", []),
         created_at=excel_record.created_at
     )
     return {
         "file_id": excel_record.id,
         "filename": excel_record.filename,
         "file_size": excel_record.file_size,
+        "file_type": file_type,
         "sheet_names": sheet_names_list,
         "metadata": metadata_resp,
-        "message": "Sample sales dataset loaded successfully."
+        "message": "Dataset loaded successfully."
     }
 
 @router.get("/files", response_model=List[dict])
@@ -158,7 +185,7 @@ def list_uploaded_files(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db)
 ):
-    """Lists files uploaded by current user or recent files"""
+    """Lists files uploaded by current user or recent files from the database"""
     query = db.query(ExcelFile)
     if current_user:
         query = query.filter((ExcelFile.user_id == current_user.id) | (ExcelFile.user_id == None))
@@ -169,6 +196,7 @@ def list_uploaded_files(
             "id": f.id,
             "filename": f.filename,
             "file_size": f.file_size,
+            "file_type": f.file_type or excel_service.detect_file_type(f.filename),
             "sheet_names": json.loads(f.sheet_names) if f.sheet_names else [],
             "created_at": f.created_at,
             "has_modified_version": bool(f.modified_filepath and os.path.exists(f.modified_filepath))
@@ -185,13 +213,29 @@ def get_file_metadata(file_id: int, db: Session = Depends(get_db)):
 
     inspection = json.loads(file_record.metadata_json) if file_record.metadata_json else {}
     sheet_names = json.loads(file_record.sheet_names) if file_record.sheet_names else []
+    file_type = file_record.file_type or inspection.get("file_type") or excel_service.detect_file_type(file_record.filename)
+    total_rows = inspection.get("total_rows", sum(s.get("row_count", 0) for s in inspection.get("sheets", {}).values()))
+    total_columns = inspection.get("total_columns", sum(s.get("column_count", 0) for s in inspection.get("sheets", {}).values()))
+    
+    sheets_dict = inspection.get("sheets", {})
+    all_cols = []
+    for s in sheets_dict.values():
+        all_cols.extend([c["name"] for c in s.get("columns", [])])
+
+    inferred_domain = inspection.get("inferred_domain") or excel_service.infer_domain(all_cols)
+    dynamic_suggestions = inspection.get("dynamic_suggestions") or excel_service.generate_dynamic_suggestions(sheets_dict)
 
     return ExcelMetadataResponse(
         file_id=file_record.id,
         filename=file_record.filename,
         file_size=file_record.file_size,
+        file_type=file_type,
         sheet_names=sheet_names,
-        sheets=inspection.get("sheets", {}),
+        sheets=sheets_dict,
+        total_rows=total_rows,
+        total_columns=total_columns,
+        inferred_domain=inferred_domain,
+        dynamic_suggestions=dynamic_suggestions,
         created_at=file_record.created_at
     )
 

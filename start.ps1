@@ -37,13 +37,7 @@ if (-not (Test-Path ".env")) {
     Copy-Item .env.example .env
 }
 
-# 5. Check Sample Data
-if (-not (Test-Path "sample_data\sample_sales_data.xlsx")) {
-    Write-Host "[*] Generating sample sales data..." -ForegroundColor Yellow
-    .\.venv\Scripts\python sample_data\create_sample_excel.py
-}
-
-# 6. Open Browser
+# 5. Open Browser
 Write-Host "[*] Launching browser at http://127.0.0.1:8000 ..." -ForegroundColor Green
 Start-Process "http://127.0.0.1:8000"
 

@@ -12,6 +12,7 @@ class ExcelFile(Base):
     stored_filename = Column(String(255), nullable=False)
     filepath = Column(String(500), nullable=False)
     file_size = Column(Integer, default=0)
+    file_type = Column(String(100), nullable=True)  # e.g., Microsoft Excel Workbook (.xlsx), CSV Document (.csv)
     sheet_names = Column(Text, nullable=False)  # JSON-encoded list of sheet names
     metadata_json = Column(Text, nullable=True)  # Detailed sheet columns, data types, statistics, preview rows
     modified_filepath = Column(String(500), nullable=True)

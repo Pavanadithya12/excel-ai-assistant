@@ -3,165 +3,355 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Excel Assistant | Python + FastAPI + SQL + LLM</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>AI Excel Assistant | Dynamic Spreadsheet Intelligence</title>
+  
+  <!-- Iconify Framework for standardized crisp icons -->
+  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+  
+  <!-- Application Stylesheet with Coolors palette & Pattern Monster backgrounds -->
+  <link rel="stylesheet" href="/static/css/style.css?v=2.2">
 </head>
 <body>
-  <div class="app-container">
+
+  <!-- ======================================================== -->
+  <!-- DIRECT LOGIN & SIGN UP PAGE (Displayed when not authenticated) -->
+  <!-- ======================================================== -->
+  <div class="auth-screen" id="auth-screen">
+    <!-- Pattern Monster Clean Geometric SVG Background -->
+    <div class="pattern-bg" aria-hidden="true">
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="auth-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 40 M 0 0 L 40 40" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.08" />
+            <circle cx="20" cy="20" r="1.5" fill="currentColor" opacity="0.12" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#auth-pattern)" />
+      </svg>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-logo-badge">
+          <iconify-icon icon="lucide:table-properties" width="32" height="32"></iconify-icon>
+        </div>
+        <h1>Excel AI Assistant</h1>
+        <p class="auth-subtitle">Dynamic Spreadsheet Analytics, Formulas & Database Intelligence</p>
+      </div>
+
+      <!-- Auth Switcher Tabs -->
+      <div class="auth-tabs" id="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">
+          <iconify-icon icon="lucide:log-in"></iconify-icon> Sign In
+        </button>
+        <button type="button" class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">
+          <iconify-icon icon="lucide:user-plus"></iconify-icon> Create Account
+        </button>
+      </div>
+
+      <!-- Sign In Form -->
+      <div class="auth-form-container" id="view-signin">
+        <form id="form-signin" onsubmit="event.preventDefault(); handleSignIn();">
+          <div class="form-group">
+            <label for="signin-email">
+              <iconify-icon icon="lucide:mail"></iconify-icon> Email Address
+            </label>
+            <input type="email" id="signin-email" placeholder="you@company.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="signin-password">
+              <iconify-icon icon="lucide:lock"></iconify-icon> Password
+            </label>
+            <input type="password" id="signin-password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-signin">
+            <iconify-icon icon="lucide:arrow-right"></iconify-icon> Sign In to Dashboard
+          </button>
+        </form>
+        <div class="auth-footer-prompt">
+          Don't have an account yet? <a href="javascript:void(0)" onclick="switchAuthTab('signup')">Sign up here</a>
+        </div>
+      </div>
+
+      <!-- Sign Up Form -->
+      <div class="auth-form-container" id="view-signup" style="display: none;">
+        <form id="form-signup" onsubmit="event.preventDefault(); handleSignUp();">
+          <div class="form-group">
+            <label for="signup-name">
+              <iconify-icon icon="lucide:user"></iconify-icon> Full Name
+            </label>
+            <input type="text" id="signup-name" placeholder="John Doe" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="signup-email">
+              <iconify-icon icon="lucide:mail"></iconify-icon> Work / Personal Email
+            </label>
+            <input type="email" id="signup-email" placeholder="you@company.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="signup-password">
+              <iconify-icon icon="lucide:key-round"></iconify-icon> Create Password
+            </label>
+            <input type="password" id="signup-password" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-signup">
+            <iconify-icon icon="lucide:shield-check"></iconify-icon> Register & Send OTP
+          </button>
+        </form>
+        <div class="auth-footer-prompt">
+          Already registered? <a href="javascript:void(0)" onclick="switchAuthTab('signin')">Sign in here</a>
+        </div>
+      </div>
+
+      <!-- OTP Verification Form -->
+      <div class="auth-form-container" id="view-otp" style="display: none;">
+        <div class="otp-notice">
+          <iconify-icon icon="lucide:mail-check" width="28" height="28" style="color: var(--color-primary);"></iconify-icon>
+          <h3>Verify Your Email</h3>
+          <p>We've sent a 6-digit confirmation code to <b id="otp-target-email">your email</b>.</p>
+        </div>
+
+        <div class="otp-dev-hint" id="otp-dev-hint" style="display: none;">
+          <iconify-icon icon="lucide:terminal"></iconify-icon> Development Code: <span id="dev-otp-value"></span>
+        </div>
+
+        <form id="form-otp" onsubmit="event.preventDefault(); handleVerifyOTP();">
+          <div class="form-group">
+            <label for="input-otp">
+              <iconify-icon icon="lucide:hash"></iconify-icon> 6-Digit OTP Code
+            </label>
+            <input type="text" id="input-otp" class="otp-input" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code">
+          </div>
+          <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-otp">
+            <iconify-icon icon="lucide:check-circle-2"></iconify-icon> Verify & Activate Account
+          </button>
+        </form>
+
+        <div class="auth-footer-prompt" style="display: flex; justify-content: space-between; align-items: center;">
+          <a href="javascript:void(0)" onclick="switchAuthTab('signin')">← Back to Sign In</a>
+          <button type="button" class="btn-text" id="btn-resend-otp" onclick="handleResendOTP()">
+            <iconify-icon icon="lucide:refresh-cw"></iconify-icon> Resend OTP
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-security-badge">
+        <iconify-icon icon="lucide:database"></iconify-icon> 100% Dynamic Database Storage • JWT Secured
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MAIN APPLICATION WORKSPACE (Displayed when authenticated) -->
+  <!-- ======================================================== -->
+  <div class="app-container" id="app-container" style="display: none;">
+    
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo-badge">
-          <div class="logo-icon"><i class="fa-solid fa-file-excel"></i></div>
+          <div class="logo-icon">
+            <iconify-icon icon="lucide:file-spreadsheet" width="22" height="22"></iconify-icon>
+          </div>
           <div class="logo-text">
             <h2>Excel AI Assistant</h2>
-            <span>FastAPI • SQL • LLM</span>
+            <span>Database-Driven • LLM Intelligence</span>
           </div>
         </div>
       </div>
 
       <div class="sidebar-actions">
-        <button class="btn-primary" id="btn-start-all-demo" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); font-weight: 700; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);">
-          <i class="fa-solid fa-bolt"></i> ⚡ Start All (Demo Run)
-        </button>
         <button class="btn-primary" id="btn-new-chat">
-          <i class="fa-solid fa-plus"></i> New Chat
+          <iconify-icon icon="lucide:plus-circle" width="18" height="18"></iconify-icon>
+          <span>New Chat Session</span>
         </button>
+        
         <button class="btn-secondary" id="btn-upload-file">
-          <i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Excel / CSV
+          <iconify-icon icon="lucide:upload-cloud" width="18" height="18"></iconify-icon>
+          <span>Upload Spreadsheet</span>
         </button>
         <input type="file" id="file-input" accept=".xlsx, .xls, .csv" style="display: none;">
-        <button class="btn-secondary" id="btn-load-sample" style="border-style: dashed; color: #2563eb; font-size: 12px;">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Load Sample Sales Data
-        </button>
       </div>
 
-      <!-- Active File Card -->
+      <!-- Active File Card (Populated Dynamically) -->
       <div class="active-file-card" id="active-file-card" style="display: none;">
-        <div class="file-info-row">
-          <span class="file-name-label" id="file-name-display"><i class="fa-solid fa-table"></i> SalesData.xlsx</span>
-          <span class="file-meta-pill" id="file-size-display">24 KB</span>
+        <div class="file-type-badge-row">
+          <span class="file-type-pill" id="file-type-pill">
+            <iconify-icon icon="lucide:file-text"></iconify-icon> Excel Workbook
+          </span>
+          <span class="file-meta-pill" id="file-size-display">0 KB</span>
         </div>
-        <select class="sheet-selector" id="sheet-dropdown">
+        
+        <div class="file-info-row">
+          <span class="file-name-label" id="file-name-display">workbook.xlsx</span>
+        </div>
+
+        <div class="file-stats-row" id="file-stats-row">
+          <span id="file-stat-rows"><iconify-icon icon="lucide:rows-3"></iconify-icon> 0 rows</span>
+          <span id="file-stat-cols"><iconify-icon icon="lucide:columns-3"></iconify-icon> 0 cols</span>
+        </div>
+
+        <select class="sheet-selector" id="sheet-dropdown" title="Select Worksheet">
           <option value="">Loading sheets...</option>
         </select>
-        <div style="display: flex; gap: 6px;">
-          <button class="btn-secondary" id="btn-inspect-schema" style="flex: 1; padding: 4px 8px; font-size: 11px;">
-            <i class="fa-solid fa-eye"></i> Inspect Schema
+
+        <div class="file-actions-row">
+          <button class="btn-secondary" id="btn-inspect-schema" title="Inspect columns and data types">
+            <iconify-icon icon="lucide:eye"></iconify-icon> Inspect Schema
           </button>
-          <a class="btn-secondary" id="btn-download-original" href="#" target="_blank" style="padding: 4px 8px; font-size: 11px; text-decoration: none;" title="Download Original">
-            <i class="fa-solid fa-download"></i>
+          <a class="btn-secondary btn-icon-only" id="btn-download-original" href="#" target="_blank" title="Download Original File">
+            <iconify-icon icon="lucide:download"></iconify-icon>
           </a>
         </div>
       </div>
 
-      <!-- History List -->
-      <div class="sidebar-section-title">Recent Conversations</div>
-      <div class="history-list" id="chat-history-list">
-        <!-- Rendered dynamically -->
+      <!-- Dynamic Recent Files from Database -->
+      <div class="sidebar-section-title">
+        <iconify-icon icon="lucide:files"></iconify-icon>
+        <span>Your Stored Documents</span>
+      </div>
+      <div class="recent-files-list" id="recent-files-list">
+        <!-- Dynamically loaded from database -->
       </div>
 
-      <!-- User Profile Footer -->
+      <!-- Chat History from Database -->
+      <div class="sidebar-section-title">
+        <iconify-icon icon="lucide:message-square"></iconify-icon>
+        <span>Conversations</span>
+      </div>
+      <div class="history-list" id="chat-history-list">
+        <!-- Dynamically loaded from database -->
+      </div>
+
+      <!-- User Profile & Sign Out Footer -->
       <div class="sidebar-footer">
-        <div class="user-profile-badge" id="user-badge" onclick="openAuthModal()">
-          <div class="avatar-circle" id="user-avatar">?</div>
+        <div class="user-profile-badge" id="user-badge">
+          <div class="avatar-circle" id="user-avatar">U</div>
           <div class="user-names">
-            <span class="user-display-name" id="user-name">Guest User</span>
-            <span class="user-status" id="user-status-text">Click to Sign In</span>
+            <span class="user-display-name" id="user-name">User</span>
+            <span class="user-status" id="user-status-text">
+              <iconify-icon icon="lucide:check-circle" style="color: var(--color-success);"></iconify-icon> Authenticated
+            </span>
           </div>
         </div>
-        <button id="btn-logout" style="display: none; background: none; border: none; color: #ef4444; cursor: pointer;" title="Sign Out">
-          <i class="fa-solid fa-right-from-bracket"></i>
+        <button id="btn-logout" class="btn-logout" title="Sign Out of Account">
+          <iconify-icon icon="lucide:log-out" width="18" height="18"></iconify-icon>
         </button>
       </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <main class="main-content">
+      <!-- Pattern Monster Subtle Texture -->
+      <div class="workspace-pattern-bg" aria-hidden="true"></div>
+
+      <!-- Top Navbar -->
       <header class="top-navbar">
         <div class="top-title-area">
-          <h3 class="top-title" id="chat-title-header">AI Excel Assistant</h3>
-          <span class="status-badge" id="active-sheet-pill"><i class="fa-solid fa-circle-check"></i> Ready</span>
+          <h3 class="top-title" id="chat-title-header">Spreadsheet Intelligence</h3>
+          <span class="status-badge" id="active-sheet-pill">
+            <iconify-icon icon="lucide:info"></iconify-icon> Ready for upload
+          </span>
         </div>
+        
         <div class="navbar-actions">
-          <button class="btn-secondary" id="btn-history-view" style="font-size: 12px;">
-            <i class="fa-solid fa-clock-rotate-left"></i> Analysis History
+          <button class="btn-secondary" id="btn-history-view">
+            <iconify-icon icon="lucide:history"></iconify-icon>
+            <span>Analysis History</span>
           </button>
-          <a class="btn-primary" id="btn-download-modified" href="#" style="display: none; text-decoration: none; font-size: 12px; background: #059669;">
-            <i class="fa-solid fa-file-export"></i> Download Enhanced Excel
+          
+          <a class="btn-primary" id="btn-download-modified" href="#" style="display: none; text-decoration: none;">
+            <iconify-icon icon="lucide:file-output"></iconify-icon>
+            <span>Download Enhanced Excel</span>
           </a>
         </div>
       </header>
 
-      <!-- Chat Messages Container -->
+      <!-- Chat Container / Output -->
       <div class="chat-container" id="chat-stream">
-        <!-- Welcome Hero Banner -->
+        
+        <!-- Dynamic Welcome / Upload Dropzone State -->
         <div class="welcome-hero" id="welcome-hero">
-          <div class="logo-icon" style="margin: 0 auto 16px; width: 48px; height: 48px; font-size: 24px;">
-            <i class="fa-solid fa-brain"></i>
+          <div class="welcome-icon-wrapper">
+            <iconify-icon icon="lucide:sparkles" width="34" height="34"></iconify-icon>
           </div>
-          <h1>Ask anything about your Spreadsheet</h1>
-          <p>Upload your Excel or CSV file. Ask questions in natural language, generate Excel formulas, calculate aggregations, and create charts.</p>
+          <h1>Ask Anything About Your Spreadsheets</h1>
+          <p>Upload any Excel (.xlsx, .xls) or CSV document. Ask questions in plain English to automatically execute formulas, compute aggregations, and render charts.</p>
 
+          <!-- Upload Dropzone Card -->
+          <div class="upload-dropzone" id="upload-dropzone" onclick="document.getElementById('file-input').click()">
+            <div class="dropzone-icon">
+              <iconify-icon icon="lucide:upload-cloud" width="40" height="40"></iconify-icon>
+            </div>
+            <h3>Click to Browse or Drag & Drop File</h3>
+            <p>Supports Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv)</p>
+            <span class="dropzone-btn">Select File from Computer</span>
+          </div>
+
+          <!-- Feature Cards Grid -->
           <div class="hero-features">
             <div class="feature-box">
-              <h4><i class="fa-solid fa-calculator" style="color: #2563eb;"></i> Formula Generation</h4>
-              <p>SUM, AVERAGE, IF, SUMIF, COUNTIF, XLOOKUP, differences, and profit margins.</p>
+              <div class="feature-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--color-primary);">
+                <iconify-icon icon="lucide:function-square" width="22" height="22"></iconify-icon>
+              </div>
+              <h4>Automated Formulas</h4>
+              <p>SUM, AVERAGE, IF, SUMIF, COUNTIF, XLOOKUP, percentage differences, and margin calculations.</p>
             </div>
+            
             <div class="feature-box">
-              <h4><i class="fa-solid fa-chart-pie" style="color: #10b981;"></i> Data Summaries</h4>
-              <p>Totals, means, min/max, top-10 customers, and multi-column group-by.</p>
+              <div class="feature-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--color-success);">
+                <iconify-icon icon="lucide:database" width="22" height="22"></iconify-icon>
+              </div>
+              <h4>Database-Backed Analytics</h4>
+              <p>Execute live Pandas aggregations, multi-column group-by, rankings, and statistical distributions.</p>
             </div>
+            
             <div class="feature-box">
-              <h4><i class="fa-solid fa-chart-simple" style="color: #f59e0b;"></i> Visualizations</h4>
-              <p>High-resolution bar, line, pie, and scatter charts generated with Matplotlib.</p>
+              <div class="feature-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--color-warning);">
+                <iconify-icon icon="lucide:bar-chart-3" width="22" height="22"></iconify-icon>
+              </div>
+              <h4>Dynamic Visualizations</h4>
+              <p>High-resolution bar, line, pie, and scatter charts generated directly from your uploaded data.</p>
             </div>
           </div>
 
-          <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 10px; text-transform: uppercase;">
-            Try asking one of these:
-          </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
-            <button class="suggestion-chip" onclick="askSampleQuestion('What is the total sales amount?')">What is the total sales amount?</button>
-            <button class="suggestion-chip" onclick="askSampleQuestion('Calculate the average sales for each region.')">Calculate the average sales for each region.</button>
-            <button class="suggestion-chip" onclick="askSampleQuestion('Give me an Excel formula to calculate profit margin.')">Give me an Excel formula to calculate profit margin.</button>
-            <button class="suggestion-chip" onclick="askSampleQuestion('Which product has the highest revenue?')">Which product has the highest revenue?</button>
-            <button class="suggestion-chip" onclick="askSampleQuestion('Show monthly sales as a line chart.')">Show monthly sales as a line chart.</button>
-            <button class="suggestion-chip" onclick="askSampleQuestion('Create a bar chart comparing sales by region.')">Create a bar chart comparing sales by region.</button>
-            <button class="suggestion-chip" onclick="askSampleQuestion('Find the top 10 customers by total purchase amount.')">Find the top 10 customers by total purchase amount.</button>
-            <button class="suggestion-chip" onclick="askSampleQuestion('Add a formula to calculate the difference between Actual and Target.')">Add a formula to calculate the difference between Actual and Target.</button>
+          <!-- Dynamic Questions Area (Filled upon file upload) -->
+          <div id="dynamic-suggestions-container" style="display: none; margin-top: 24px;">
+            <div class="suggestions-header">
+              <iconify-icon icon="lucide:sparkles" style="color: var(--color-primary);"></iconify-icon>
+              <span>Suggested Questions for Your Uploaded Document</span>
+            </div>
+            <div class="dynamic-chips-grid" id="dynamic-hero-chips">
+              <!-- Dynamically populated -->
+            </div>
           </div>
         </div>
+
       </div>
 
-      <!-- Quick Suggestion Bar -->
-      <div class="suggestions-bar" id="bottom-suggestions-bar">
-        <span class="suggestion-chip" onclick="askSampleQuestion('What is the total sales amount?')">Total Sales</span>
-        <span class="suggestion-chip" onclick="askSampleQuestion('Calculate the average sales for each region.')">Average by Region</span>
-        <span class="suggestion-chip" onclick="askSampleQuestion('Give me an Excel formula to calculate profit margin.')">Formula: Profit Margin</span>
-        <span class="suggestion-chip" onclick="askSampleQuestion('Create a bar chart comparing sales by region.')">Chart: Sales by Region</span>
-        <span class="suggestion-chip" onclick="askSampleQuestion('Show monthly sales as a line chart.')">Chart: Monthly Trend</span>
-        <span class="suggestion-chip" onclick="askSampleQuestion('Find the top 10 customers by total purchase amount.')">Top 10 Customers</span>
+      <!-- Quick Suggestion Bar at bottom -->
+      <div class="suggestions-bar" id="bottom-suggestions-bar" style="display: none;">
+        <!-- Dynamically injected chips -->
       </div>
 
-      <!-- Input Area -->
+      <!-- Chat Input Area -->
       <div class="chat-input-area">
         <div class="chat-input-box">
           <div class="input-options-row">
-            <label class="checkbox-label">
+            <label class="checkbox-label" title="Enable AI to perform live web research for benchmarks or market formulas">
               <input type="checkbox" id="check-web-research">
-              <span><i class="fa-solid fa-globe"></i> AI Web Research</span>
+              <span><iconify-icon icon="lucide:globe"></iconify-icon> Web Research</span>
             </label>
-            <label class="checkbox-label">
+            <label class="checkbox-label" title="Automatically inject answers, formulas, or charts into a modified .xlsx file">
               <input type="checkbox" id="check-modify-excel" checked>
-              <span><i class="fa-solid fa-file-excel"></i> Inject into Modified Excel (.xlsx)</span>
+              <span><iconify-icon icon="lucide:file-edit"></iconify-icon> Inject into Downloadable Excel</span>
             </label>
           </div>
+          
           <div class="input-wrapper">
-            <textarea id="question-input" rows="1" placeholder="Ask a question about your spreadsheet (e.g., 'What is the total sales amount?')..."></textarea>
-            <button class="btn-send" id="btn-submit-question">
-              <i class="fa-solid fa-arrow-up"></i>
+            <textarea id="question-input" rows="1" placeholder="Ask a question about your uploaded spreadsheet..."></textarea>
+            <button class="btn-send" id="btn-submit-question" title="Send Question (Enter)">
+              <iconify-icon icon="lucide:arrow-up" width="20" height="20"></iconify-icon>
             </button>
           </div>
         </div>
@@ -169,99 +359,43 @@
     </main>
   </div>
 
-  <!-- Auth Modal -->
-  <div class="modal-overlay" id="auth-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="auth-modal-title">Sign In / Register</h3>
-        <button class="close-btn" onclick="closeAuthModal()">&times;</button>
-      </div>
-
-      <!-- Sign In View -->
-      <div id="auth-signin-view">
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" id="signin-email" placeholder="you@company.com">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="signin-password" placeholder="••••••••">
-        </div>
-        <button class="btn-primary" id="btn-submit-signin" style="width: 100%; margin-top: 10px;">
-          Sign In
-        </button>
-        <p style="font-size: 12px; text-align: center; color: var(--text-muted); margin-top: 10px;">
-          Don't have an account? <a href="#" onclick="showSignUpView()" style="color: var(--primary); font-weight: 600;">Sign Up</a>
-        </p>
-      </div>
-
-      <!-- Sign Up View -->
-      <div id="auth-signup-view" style="display: none;">
-        <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" id="signup-name" placeholder="Alex Morgan">
-        </div>
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" id="signup-email" placeholder="you@company.com">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="signup-password" placeholder="At least 6 characters">
-        </div>
-        <button class="btn-primary" id="btn-submit-signup" style="width: 100%; margin-top: 10px;">
-          Register & Send OTP
-        </button>
-        <p style="font-size: 12px; text-align: center; color: var(--text-muted); margin-top: 10px;">
-          Already have an account? <a href="#" onclick="showSignInView()" style="color: var(--primary); font-weight: 600;">Sign In</a>
-        </p>
-      </div>
-
-      <!-- OTP Verification View -->
-      <div id="auth-otp-view" style="display: none;">
-        <p style="font-size: 13px; color: var(--text-muted);">
-          Enter the 6-digit verification code sent to <b id="otp-target-email">your email</b>.
-        </p>
-        <div class="otp-box-dev" id="otp-dev-hint" style="display: none;">
-          Dev OTP Code: <b id="dev-otp-value"></b>
-        </div>
-        <div class="form-group" style="margin-top: 8px;">
-          <label>Verification OTP Code</label>
-          <input type="text" id="input-otp" placeholder="123456" maxlength="6" style="letter-spacing: 0.2em; font-size: 18px; text-align: center;">
-        </div>
-        <button class="btn-primary" id="btn-submit-otp" style="width: 100%; margin-top: 10px;">
-          Verify & Activate Account
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- ======================================================== -->
+  <!-- MODALS -->
+  <!-- ======================================================== -->
 
   <!-- Schema Inspector Modal -->
-  <div class="modal-overlay" id="schema-modal">
-    <div class="modal-card" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+  <div class="modal-overlay" id="schema-modal" style="display: none;">
+    <div class="modal-card">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-table-cells"></i> Spreadsheet Structure & Metadata</h3>
-        <button class="close-btn" onclick="closeSchemaModal()">&times;</button>
+        <div class="modal-title-with-icon">
+          <iconify-icon icon="lucide:table-cells" width="22" height="22" style="color: var(--color-primary);"></iconify-icon>
+          <h3>Spreadsheet Schema & Column Metadata</h3>
+        </div>
+        <button class="close-btn" onclick="closeSchemaModal()" title="Close">&times;</button>
       </div>
-      <div id="schema-content-area">
+      <div id="schema-content-area" class="modal-body-scroll">
         <!-- Rendered dynamically -->
       </div>
     </div>
   </div>
 
   <!-- Analysis History Modal -->
-  <div class="modal-overlay" id="history-modal">
-    <div class="modal-card" style="max-width: 760px; max-height: 85vh; overflow-y: auto;">
+  <div class="modal-overlay" id="history-modal" style="display: none;">
+    <div class="modal-card">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-clock-rotate-left"></i> SQL Analysis History</h3>
-        <button class="close-btn" onclick="closeHistoryModal()">&times;</button>
+        <div class="modal-title-with-icon">
+          <iconify-icon icon="lucide:history" width="22" height="22" style="color: var(--color-primary);"></iconify-icon>
+          <h3>Database Analysis History</h3>
+        </div>
+        <button class="close-btn" onclick="closeHistoryModal()" title="Close">&times;</button>
       </div>
-      <div id="history-content-area">
+      <div id="history-content-area" class="modal-body-scroll">
         <!-- Rendered dynamically -->
       </div>
     </div>
   </div>
 
-  <script src="/static/js/app.js"></script>
+  <!-- Main JavaScript File -->
+  <script src="/static/js/app.js?v=2.2"></script>
 </body>
 </html>
