@@ -52,19 +52,21 @@ app.add_middleware(
 )
 
 # Dedicated route to serve charts from settings.CHARTS_DIR (supports /tmp/charts on Vercel)
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(current_file_dir, "static")
+
 @app.get("/static/charts/{filename}", include_in_schema=False)
 def serve_chart_image(filename: str):
     file_path = os.path.join(settings.CHARTS_DIR, filename)
     if os.path.exists(file_path):
         return FileResponse(file_path, media_type="image/png")
-    fallback_path = os.path.join(os.path.abspath("app/static/charts"), filename)
+    fallback_path = os.path.join(static_dir, "charts", filename)
     if os.path.exists(fallback_path):
         return FileResponse(fallback_path, media_type="image/png")
     from fastapi import HTTPException
     raise HTTPException(status_code=404, detail="Chart not found")
 
 # Mount Static Files (Frontend UI and Generated Assets)
-static_dir = os.path.abspath("app/static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Include Routers
