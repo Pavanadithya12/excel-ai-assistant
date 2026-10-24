@@ -11,12 +11,14 @@ class EmailService:
     @staticmethod
     def send_otp_email(to_email: str, otp_code: str) -> bool:
         """
-        Sends OTP email. In dev mode, prints clearly to console and logs.
-        If SMTP is configured, sends via real SMTP.
+        Dispatches a 6-digit OTP verification code to the user's email address.
+        Uses TLS/SSL SMTP (e.g. Gmail, Outlook, AWS SES, Brevo, or custom SMTP).
+        Also prints prominent development logs to the server terminal.
         """
-        subject = f"Your Verification Code - {settings.PROJECT_NAME}"
-        body_text = f"""
-Hello,
+        subject = f"Your Verification OTP Code: {otp_code} — {settings.PROJECT_NAME}"
+        
+        # Plain text fallback
+        body_text = f"""Hello,
 
 Your verification OTP code for {settings.PROJECT_NAME} is:
 
@@ -24,39 +26,113 @@ Your verification OTP code for {settings.PROJECT_NAME} is:
              {otp_code}
     ===========================
 
-This code will expire in 10 minutes. If you did not request this, please ignore this email.
+This 6-digit code is valid for 10 minutes.
+Copy and paste this code into the login verification prompt to access your workspace.
+
+If you did not request this verification code, please ignore this email.
 
 Best regards,
 The {settings.PROJECT_NAME} Team
 """
-        # Always log prominently to terminal for effortless development and testing
-        print("\n" + "=" * 60)
+
+        # Branded Modern Red & White HTML Email
+        body_html = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Your Verification Code</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 15px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 520px; background-color: #ffffff; border-radius: 12px; border: 1px solid #fee2e2; box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.08); overflow: hidden;">
+          <!-- Header Banner -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 28px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Excel AI Assistant</h1>
+              <p style="margin: 6px 0 0; color: #fee2e2; font-size: 13px;">Secure Two-Factor Authentication</p>
+            </td>
+          </tr>
+          <!-- Content Body -->
+          <tr>
+            <td style="padding: 35px 30px;">
+              <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5; color: #334155;">Hello,</p>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.5; color: #334155;">
+                We received a sign-in or registration request for <b>{to_email}</b>. Use the 6-digit verification code below to complete your authentication:
+              </p>
+              
+              <!-- OTP Box -->
+              <div style="background-color: #fff5f5; border: 2px dashed #f87171; border-radius: 10px; padding: 22px; text-align: center; margin: 25px 0;">
+                <span style="font-family: 'Courier New', Courier, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #dc2626; display: inline-block;">
+                  {otp_code}
+                </span>
+                <p style="margin: 10px 0 0; font-size: 12px; color: #7f1d1d; font-weight: 600;">
+                  ⏳ Code expires in 10 minutes
+                </p>
+              </div>
+
+              <p style="margin: 0 0 12px; font-size: 13.5px; line-height: 1.5; color: #64748b;">
+                Copy and enter this code in the login verification screen to access your spreadsheet intelligence dashboard.
+              </p>
+              <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #94a3b8;">
+                If you did not request this login code, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8fafc; border-top: 1px solid #f1f5f9; padding: 18px 30px; text-align: center; font-size: 12px; color: #94a3b8;">
+              &copy; {settings.PROJECT_NAME} • Secure Relational Spreadsheet Analytics
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+        # Prominent console logging
+        print("\n" + "=" * 65)
         print(f"📧 [EMAIL SERVICE - OTP NOTIFICATION]")
         print(f"To: {to_email}")
         print(f"Subject: {subject}")
         print(f"OTP Code: >>> {otp_code} <<< (valid for 10 minutes)")
-        print("=" * 60 + "\n")
+        if not (settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD):
+            print("💡 TIP: Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env to deliver real emails to inbox!")
+        print("=" * 65 + "\n")
         
-        # If SMTP is configured, attempt real email delivery
+        # Real SMTP Delivery
         if settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD:
             try:
-                msg = MIMEMultipart()
-                msg['From'] = settings.FROM_EMAIL
+                msg = MIMEMultipart("alternative")
+                from_addr = settings.FROM_EMAIL or settings.SMTP_USER
+                msg['From'] = f"{settings.PROJECT_NAME} <{from_addr}>"
                 msg['To'] = to_email
                 msg['Subject'] = subject
                 msg.attach(MIMEText(body_text, 'plain'))
+                msg.attach(MIMEText(body_html, 'html'))
                 
-                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-                    server.starttls()
-                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                    server.send_message(msg)
-                logger.info(f"OTP email sent successfully to {to_email}")
+                # Port 465 (SSL) vs Port 587 (STARTTLS)
+                if settings.SMTP_PORT == 465:
+                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                        server.send_message(msg)
+                else:
+                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                        server.starttls()
+                        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                        server.send_message(msg)
+
+                logger.info(f"✅ Real OTP email delivered via SMTP to {to_email}")
                 return True
             except Exception as e:
-                logger.error(f"Failed to send email via SMTP: {e}")
-                return True
+                logger.error(f"❌ Failed to deliver email via SMTP: {e}")
+                return False
         else:
-            logger.info("SMTP settings not configured in .env. To deliver real emails, set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD.")
+            logger.info("ℹ️ SMTP settings not configured in .env. Console OTP output logged above.")
             return True
 
 email_service = EmailService()

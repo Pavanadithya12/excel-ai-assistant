@@ -191,19 +191,22 @@ function switchAuthTab(tab) {
   }
 }
 
-function showOTPView(email, devOtp) {
+function showOTPView(email) {
   currentPendingEmail = email;
   document.getElementById("view-signin").style.display = "none";
   document.getElementById("view-signup").style.display = "none";
   document.getElementById("view-otp").style.display = "block";
   document.getElementById("otp-target-email").innerText = email;
 
-  if (devOtp) {
-    document.getElementById("otp-dev-hint").style.display = "flex";
-    document.getElementById("dev-otp-value").innerText = devOtp;
-    document.getElementById("input-otp").value = devOtp;
-  } else {
-    document.getElementById("otp-dev-hint").style.display = "none";
+  // Clear input so user types/pastes the real OTP from their email inbox
+  const inputOtp = document.getElementById("input-otp");
+  if (inputOtp) {
+    inputOtp.value = "";
+    inputOtp.focus();
+  }
+  const devHint = document.getElementById("otp-dev-hint");
+  if (devHint) {
+    devHint.style.display = "none";
   }
 }
 
@@ -217,6 +220,7 @@ async function handleSignIn() {
   }
 
   try {
+    showNotification("Verifying credentials & sending OTP code...", "info");
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -226,12 +230,17 @@ async function handleSignIn() {
 
     if (!res.ok) {
       if (res.status === 403) {
-        showNotification("Email unverified. Enter verification code.", "info");
-        const otpCode = data.dev_otp || res.headers.get("X-Dev-OTP");
-        showOTPView(email, otpCode);
+        showNotification("Account requires verification. Check your email.", "info");
+        showOTPView(email);
         return;
       }
       throw new Error(data.detail || "Sign in failed.");
+    }
+
+    if (data.requires_otp) {
+      showNotification(data.message || `OTP sent to ${email}. Check your email inbox.`, "success");
+      showOTPView(email);
+      return;
     }
 
     token = data.access_token;
@@ -259,6 +268,7 @@ async function handleSignUp() {
   }
 
   try {
+    showNotification("Creating account & sending OTP to your email...", "info");
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -267,8 +277,8 @@ async function handleSignUp() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Registration failed.");
 
-    showNotification(data.message, "success");
-    showOTPView(email, data.dev_otp);
+    showNotification(data.message || "OTP code sent to your email!", "success");
+    showOTPView(email);
   } catch (err) {
     showNotification(err.message, "error");
   }
@@ -307,6 +317,7 @@ async function handleVerifyOTP() {
 async function handleResendOTP() {
   if (!currentPendingEmail) return;
   try {
+    showNotification("Sending a fresh OTP code to your email...", "info");
     const res = await fetch("/api/auth/resend-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -314,7 +325,12 @@ async function handleResendOTP() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Failed to resend code.");
-    showNotification("A new verification code was sent to your email.", "success");
+    showNotification("A fresh verification code was sent to your email inbox.", "success");
+    const inputOtp = document.getElementById("input-otp");
+    if (inputOtp) {
+      inputOtp.value = "";
+      inputOtp.focus();
+    }
   } catch (err) {
     showNotification(err.message, "error");
   }
