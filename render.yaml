@@ -17,4 +17,14 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: EMAIL_DEV_MODE
-        value: "true"
+        value: "false"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
