@@ -77,61 +77,96 @@ class ExcelService:
 
     @staticmethod
     def generate_dynamic_suggestions(sheets_data: Dict[str, Any]) -> List[str]:
-        """Generates dynamic queries tailored directly to actual column names, ignoring dummy Unnamed columns"""
+        """Generates dynamic queries tailored directly to actual column names and business topic"""
         suggestions = []
         if not sheets_data:
             return [
+                "Show me a preview of the first 10 rows.",
                 "How many rows and columns does this document have?",
-                "Summarize key column distributions and null values.",
                 "What data types are in each column?"
             ]
 
         first_sheet = next(iter(sheets_data.values()))
         cols = first_sheet.get("columns", [])
-        row_count = first_sheet.get("row_count", 0)
         
         # Filter out any column named Unnamed:* or Col_*
         clean_cols = [c for c in cols if not str(c.get("name", "")).startswith("Unnamed:") and not str(c.get("name", "")).startswith("Col_")]
         if not clean_cols:
             clean_cols = cols
 
+        col_names = [c["name"] for c in clean_cols]
         numeric_cols = [c["name"] for c in clean_cols if c.get("data_type") == "numeric"]
         text_cols = [c["name"] for c in clean_cols if c.get("data_type") == "text"]
         datetime_cols = [c["name"] for c in clean_cols if c.get("data_type") == "datetime"]
 
-        # 1. Always-present document meta questions
-        suggestions.append(f"How many rows and columns does this document have?")
-        suggestions.append("Summarize key column distributions and null values.")
+        domain = ExcelService.infer_domain(col_names)
 
-        # 2. Total or Average metric on numeric columns
-        if numeric_cols:
-            suggestions.append(f"What is the average {numeric_cols[0]}?")
-            if len(numeric_cols) > 1:
-                suggestions.append(f"What is the total {numeric_cols[1]}?")
-            else:
+        # 1. Project Management Domain Specific
+        if "Project Management" in domain:
+            task_col = next((c for c in text_cols if "task" in c.lower()), None)
+            proj_col = next((c for c in text_cols if "project" in c.lower()), None)
+            assigned_col = next((c for c in text_cols if "assign" in c.lower() or "owner" in c.lower() or "name" in c.lower()), None)
+            prog_col = next((c for c in numeric_cols if "progress" in c.lower() or "%" in c.lower()), None)
+            days_col = next((c for c in numeric_cols if "day" in c.lower() or "duration" in c.lower() or "hour" in c.lower()), None)
+
+            if proj_col:
+                suggestions.append(f"Show unique values in the {proj_col} column.")
+            if task_col:
+                suggestions.append(f"How many unique {task_col} entries are there?")
+            if days_col and proj_col:
+                suggestions.append(f"Calculate the average {days_col} for each {proj_col}.")
+                suggestions.append(f"Create a bar chart comparing {days_col} by {proj_col}.")
+            elif prog_col and proj_col:
+                suggestions.append(f"Calculate the average {prog_col} for each {proj_col}.")
+                suggestions.append(f"Create a bar chart comparing {prog_col} by {proj_col}.")
+            if assigned_col and (prog_col or days_col):
+                val = prog_col or days_col
+                suggestions.append(f"Which {assigned_col} has the highest {val}?")
+
+        # 2. Financial & Sales Domain Specific
+        elif "Financial" in domain or "Sales" in domain:
+            sales_col = next((c for c in numeric_cols if any(k in c.lower() for k in ["sales", "revenue", "amount", "total"])), None)
+            profit_col = next((c for c in numeric_cols if any(k in c.lower() for k in ["profit", "margin", "net"])), None)
+            cat_col = next((c for c in text_cols if any(k in c.lower() for k in ["region", "product", "category", "customer"])), None)
+
+            if sales_col:
+                suggestions.append(f"What is the total {sales_col}?")
+                suggestions.append(f"What is the average {sales_col}?")
+            if sales_col and cat_col:
+                suggestions.append(f"Calculate the total {sales_col} for each {cat_col}.")
+                suggestions.append(f"Create a bar chart comparing {sales_col} by {cat_col}.")
+                suggestions.append(f"Which {cat_col} has the highest {sales_col}?")
+            if profit_col:
+                suggestions.append(f"What is the total {profit_col}?")
+
+        # 3. Generic column-driven suggestions (if domain-specific didn't fill enough)
+        if len(suggestions) < 4:
+            if numeric_cols:
+                suggestions.append(f"What is the average {numeric_cols[0]}?")
                 suggestions.append(f"What is the total {numeric_cols[0]}?")
+            if numeric_cols and text_cols:
+                suggestions.append(f"Calculate the average {numeric_cols[0]} for each {text_cols[0]}. ")
+                suggestions.append(f"Create a bar chart comparing {numeric_cols[0]} by {text_cols[0]}.")
+                suggestions.append(f"Which {text_cols[0]} has the highest {numeric_cols[0]}?")
+            elif text_cols:
+                suggestions.append(f"Show unique values in the {text_cols[0]} column.")
+                if len(text_cols) > 1:
+                    suggestions.append(f"How many unique {text_cols[1]} entries are there?")
 
-        # 3. Group by / Categorical comparison
-        if numeric_cols and text_cols:
-            suggestions.append(f"Calculate the average {numeric_cols[0]} for each {text_cols[0]}.")
-            suggestions.append(f"Create a bar chart comparing {numeric_cols[0]} by {text_cols[0]}.")
-            suggestions.append(f"Which {text_cols[0]} has the highest {numeric_cols[0]}?")
+        # Add line chart suggestion if datetime exists
+        if datetime_cols and numeric_cols and len(suggestions) < 6:
+            suggestions.append(f"Show trend of {numeric_cols[0]} over {datetime_cols[0]} as a line chart.")
 
-        # 4. Text-only doc: use text columns
-        if not numeric_cols and text_cols:
-            suggestions.append(f"Show unique values in the {text_cols[0]} column.")
-            if len(text_cols) > 1:
-                suggestions.append(f"How many unique {text_cols[1]} entries are there?")
+        # Strip extra whitespace & ensure distinct suggestions
+        seen = set()
+        distinct_suggestions = []
+        for s in suggestions:
+            s_clean = s.strip()
+            if s_clean not in seen:
+                seen.add(s_clean)
+                distinct_suggestions.append(s_clean)
 
-        # 5. Time-series / Line chart
-        if datetime_cols and numeric_cols:
-            suggestions.append(f"Show trend of {numeric_cols[0]} over time as a line chart.")
-
-        # 6. Formula suggestion
-        if numeric_cols:
-            suggestions.append(f"Give me an Excel formula to calculate the average of {numeric_cols[0]}.")
-
-        return suggestions[:8]
+        return distinct_suggestions[:6]
 
     @staticmethod
     def inspect_file(filepath: str) -> Dict[str, Any]:
@@ -187,7 +222,7 @@ class ExcelService:
             series = df[col]
             dtype_str = str(series.dtype)
             
-            # Categorize data type using pandas api types
+            # Categorize data type using pandas api types with fallback parsing for object series
             if pd.api.types.is_numeric_dtype(series):
                 category = "numeric"
                 min_v = float(series.min()) if not series.empty and pd.notnull(series.min()) else None
@@ -202,8 +237,30 @@ class ExcelService:
                 category = "boolean"
                 min_v, max_v, mean_v = None, None, None
             else:
-                category = "text"
-                min_v, max_v, mean_v = None, None, None
+                # For object/string series, detect if predominantly numeric or datetime
+                num_series = pd.to_numeric(series, errors='coerce')
+                num_valid = num_series.notnull().sum()
+                total_valid = series.notnull().sum()
+
+                if total_valid > 0 and (num_valid / total_valid) >= 0.7:
+                    category = "numeric"
+                    clean_s = num_series.dropna()
+                    min_v = float(clean_s.min()) if not clean_s.empty else None
+                    max_v = float(clean_s.max()) if not clean_s.empty else None
+                    mean_v = float(round(clean_s.mean(), 2)) if not clean_s.empty else None
+                else:
+                    # Check if dates
+                    dt_series = pd.to_datetime(series, errors='coerce')
+                    dt_valid = dt_series.notnull().sum()
+                    if total_valid > 0 and (dt_valid / total_valid) >= 0.7:
+                        category = "datetime"
+                        clean_dt = dt_series.dropna()
+                        min_v = str(clean_dt.min()) if not clean_dt.empty else None
+                        max_v = str(clean_dt.max()) if not clean_dt.empty else None
+                        mean_v = None
+                    else:
+                        category = "text"
+                        min_v, max_v, mean_v = None, None, None
 
             # Get clean sample values (JSON-serializable)
             clean_samples = []

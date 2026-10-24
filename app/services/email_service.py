@@ -54,8 +54,9 @@ The {settings.PROJECT_NAME} Team
                 return True
             except Exception as e:
                 logger.error(f"Failed to send email via SMTP: {e}")
-                # Fall back to True since console log is already captured
                 return True
-        return True
+        else:
+            logger.info("SMTP settings not configured in .env. To deliver real emails, set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD.")
+            return True
 
 email_service = EmailService()

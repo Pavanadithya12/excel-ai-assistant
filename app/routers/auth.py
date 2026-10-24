@@ -124,10 +124,15 @@ def login(request: UserSignInRequest, db: Session = Depends(get_db)):
         else:
             otp = user.otp_code
 
-        raise HTTPException(
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
             status_code=403,
-            detail="Account not verified. Please verify your OTP to activate account.",
-            headers={"X-Dev-OTP": otp}
+            content={
+                "detail": "Account not verified. Please enter the 6-digit verification code to activate your account.",
+                "email": user.email,
+                "dev_otp": otp
+            },
+            headers={"X-Dev-OTP": str(otp)}
         )
 
     token_str = auth_service.create_access_token({"sub": user.email, "user_id": user.id})

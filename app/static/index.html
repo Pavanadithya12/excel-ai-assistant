@@ -3,27 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Excel Assistant | Futuristic Spreadsheet Intelligence</title>
+  <title>AI Excel Assistant | Mindful Spreadsheet Intelligence</title>
   
-  <!-- Iconify Framework for standardized crisp icons -->
+  <!-- Iconify Framework for standardized Google Material Symbols Light icons -->
   <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
   
-  <!-- Application Stylesheet with Coolors palette & Pattern Monster backgrounds -->
-  <link rel="stylesheet" href="/static/css/style.css?v=4.0">
+  <!-- Application Stylesheet with Headspace Calm Palette & Pattern Monster -->
+  <link rel="stylesheet" href="/static/css/style.css?v=5.0">
 </head>
 <body>
 
   <!-- ======================================================== -->
-  <!-- DIRECT LOGIN & SIGN UP PAGE (Displayed when not authenticated) -->
+  <!-- DIRECT LOGIN & SIGN UP PAGE (Mindful & Soothing) -->
   <!-- ======================================================== -->
   <div class="auth-screen" id="auth-screen">
     <!-- Pattern Monster Clean Geometric SVG Background -->
     <div class="pattern-bg" aria-hidden="true">
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <pattern id="auth-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 40 M 0 0 L 40 40" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.08" />
-            <circle cx="20" cy="20" r="1.5" fill="currentColor" opacity="0.12" />
+          <pattern id="auth-pattern" width="60" height="60" patternUnits="userSpaceOnUse">
+            <circle cx="30" cy="30" r="1.5" fill="#f59e0b" opacity="0.12" />
+            <path d="M 60 0 L 0 60 M 0 0 L 60 60" fill="none" stroke="#f59e0b" stroke-width="0.75" opacity="0.05" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#auth-pattern)" />
@@ -33,19 +33,19 @@
     <div class="auth-card">
       <div class="auth-brand">
         <div class="auth-logo-badge">
-          <iconify-icon icon="lucide:table-properties" width="32" height="32"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:table-chart-outline" width="34" height="34"></iconify-icon>
         </div>
-        <h1>Excel AI Assistant</h1>
-        <p class="auth-subtitle">Futuristic Spreadsheet Analytics, Formulas & Database Intelligence</p>
+        <h1>Excel AI Studio</h1>
+        <p class="auth-subtitle">Mindful Spreadsheet Analytics, Formulas & Database Intelligence</p>
       </div>
 
       <!-- Auth Switcher Tabs -->
       <div class="auth-tabs" id="auth-tabs">
         <button type="button" class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">
-          <iconify-icon icon="lucide:log-in"></iconify-icon> Sign In
+          <iconify-icon icon="material-symbols-light:login" width="18" height="18"></iconify-icon> Sign In
         </button>
         <button type="button" class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">
-          <iconify-icon icon="lucide:user-plus"></iconify-icon> Create Account
+          <iconify-icon icon="material-symbols-light:person-add-outline" width="18" height="18"></iconify-icon> Create Account
         </button>
       </div>
 
@@ -54,18 +54,18 @@
         <form id="form-signin" onsubmit="event.preventDefault(); handleSignIn();">
           <div class="form-group">
             <label for="signin-email">
-              <iconify-icon icon="lucide:mail"></iconify-icon> Email Address
+              <iconify-icon icon="material-symbols-light:mail-outline" width="16" height="16"></iconify-icon> Email Address
             </label>
             <input type="email" id="signin-email" placeholder="you@company.com" required autocomplete="email">
           </div>
           <div class="form-group">
             <label for="signin-password">
-              <iconify-icon icon="lucide:lock"></iconify-icon> Password
+              <iconify-icon icon="material-symbols-light:lock-outline" width="16" height="16"></iconify-icon> Password
             </label>
             <input type="password" id="signin-password" placeholder="••••••••" required autocomplete="current-password">
           </div>
           <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-signin">
-            <iconify-icon icon="lucide:arrow-right"></iconify-icon> Sign In to Dashboard
+            <iconify-icon icon="material-symbols-light:arrow-forward" width="20" height="20"></iconify-icon> Sign In to Dashboard
           </button>
         </form>
         <div class="auth-footer-prompt">
@@ -78,24 +78,24 @@
         <form id="form-signup" onsubmit="event.preventDefault(); handleSignUp();">
           <div class="form-group">
             <label for="signup-name">
-              <iconify-icon icon="lucide:user"></iconify-icon> Full Name
+              <iconify-icon icon="material-symbols-light:person-outline" width="16" height="16"></iconify-icon> Full Name
             </label>
             <input type="text" id="signup-name" placeholder="John Doe" required autocomplete="name">
           </div>
           <div class="form-group">
             <label for="signup-email">
-              <iconify-icon icon="lucide:mail"></iconify-icon> Work / Personal Email
+              <iconify-icon icon="material-symbols-light:mail-outline" width="16" height="16"></iconify-icon> Work / Personal Email
             </label>
             <input type="email" id="signup-email" placeholder="you@company.com" required autocomplete="email">
           </div>
           <div class="form-group">
             <label for="signup-password">
-              <iconify-icon icon="lucide:key-round"></iconify-icon> Create Password
+              <iconify-icon icon="material-symbols-light:key-outline" width="16" height="16"></iconify-icon> Create Password
             </label>
             <input type="password" id="signup-password" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password">
           </div>
           <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-signup">
-            <iconify-icon icon="lucide:shield-check"></iconify-icon> Register & Send OTP
+            <iconify-icon icon="material-symbols-light:verified-user-outline" width="20" height="20"></iconify-icon> Register & Send OTP
           </button>
         </form>
         <div class="auth-footer-prompt">
@@ -106,43 +106,43 @@
       <!-- OTP Verification Form -->
       <div class="auth-form-container" id="view-otp" style="display: none;">
         <div class="otp-notice">
-          <iconify-icon icon="lucide:mail-check" width="28" height="28" style="color: var(--color-primary);"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:mark-email-read-outline" width="32" height="32" style="color: var(--color-primary);"></iconify-icon>
           <h3>Verify Your Email</h3>
           <p>We've sent a 6-digit confirmation code to <b id="otp-target-email">your email</b>.</p>
         </div>
 
         <div class="otp-dev-hint" id="otp-dev-hint" style="display: none;">
-          <iconify-icon icon="lucide:terminal"></iconify-icon> Development Code: <span id="dev-otp-value"></span>
+          <iconify-icon icon="material-symbols-light:terminal" width="16" height="16"></iconify-icon> Verification Code: <span id="dev-otp-value"></span>
         </div>
 
         <form id="form-otp" onsubmit="event.preventDefault(); handleVerifyOTP();">
           <div class="form-group">
             <label for="input-otp">
-              <iconify-icon icon="lucide:hash"></iconify-icon> 6-Digit OTP Code
+              <iconify-icon icon="material-symbols-light:tag" width="16" height="16"></iconify-icon> 6-Digit OTP Code
             </label>
             <input type="text" id="input-otp" class="otp-input" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code">
           </div>
           <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-otp">
-            <iconify-icon icon="lucide:check-circle-2"></iconify-icon> Verify & Activate Account
+            <iconify-icon icon="material-symbols-light:check-circle-outline" width="20" height="20"></iconify-icon> Verify & Activate Account
           </button>
         </form>
 
         <div class="auth-footer-prompt" style="display: flex; justify-content: space-between; align-items: center;">
           <a href="javascript:void(0)" onclick="switchAuthTab('signin')">← Back to Sign In</a>
-          <button type="button" class="btn-text" id="btn-resend-otp" onclick="handleResendOTP()">
-            <iconify-icon icon="lucide:refresh-cw"></iconify-icon> Resend OTP
+          <button type="button" class="btn-text" id="btn-resend-otp" onclick="handleResendOTP()" style="background:none; border:none; color:var(--color-primary); cursor:pointer; font-size:12.5px; display:inline-flex; align-items:center; gap:4px;">
+            <iconify-icon icon="material-symbols-light:refresh" width="16" height="16"></iconify-icon> Resend Code
           </button>
         </div>
       </div>
 
       <div class="auth-security-badge">
-        <iconify-icon icon="lucide:database"></iconify-icon> 100% Dynamic Database Storage • JWT Secured
+        <iconify-icon icon="material-symbols-light:database-outline" width="14" height="14"></iconify-icon> 100% Dynamic Database Storage • JWT Secured
       </div>
     </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- MAIN APPLICATION WORKSPACE (Futuristic 3-Column Studio) -->
+  <!-- MAIN APPLICATION WORKSPACE (Mindful 3-Column Studio) -->
   <!-- ======================================================== -->
   <div class="app-container" id="app-container" style="display: none;">
     
@@ -151,23 +151,23 @@
       <div class="sidebar-header">
         <div class="logo-badge">
           <div class="logo-icon">
-            <iconify-icon icon="lucide:file-spreadsheet" width="22" height="22"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:table-chart-outline" width="22" height="22"></iconify-icon>
           </div>
           <div class="logo-text">
             <h2>Excel AI Studio</h2>
-            <span>Database-Driven • AI Intelligence</span>
+            <span>Database-Driven • Mindful AI</span>
           </div>
         </div>
       </div>
 
       <div class="sidebar-actions">
         <button class="btn-primary" id="btn-new-chat">
-          <iconify-icon icon="lucide:plus-circle" width="18" height="18"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:add-circle-outline" width="18" height="18"></iconify-icon>
           <span>New Chat Session</span>
         </button>
         
         <button class="btn-secondary" id="btn-upload-file">
-          <iconify-icon icon="lucide:upload-cloud" width="18" height="18"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:cloud-upload-outline" width="18" height="18"></iconify-icon>
           <span>Upload Spreadsheet</span>
         </button>
         <input type="file" id="file-input" accept=".xlsx, .xls, .csv" style="display: none;">
@@ -182,19 +182,19 @@
         
         <!-- Document Name -->
         <div class="file-name-row">
-          <iconify-icon icon="lucide:file-spreadsheet" class="file-icon-accent"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:description-outline" class="file-icon-accent"></iconify-icon>
           <span class="file-name-label" id="file-name-display">workbook.xlsx</span>
         </div>
 
         <!-- Document Type Display (Shown DIRECTLY below document name) -->
         <div class="doc-type-badge-below" id="file-type-display">
-          <iconify-icon icon="lucide:file-badge"></iconify-icon> Microsoft Excel OpenXML (.xlsx)
+          <iconify-icon icon="material-symbols-light:badge-outline" width="14" height="14"></iconify-icon> Microsoft Excel OpenXML (.xlsx)
         </div>
 
         <!-- Dimensions -->
         <div class="file-stats-row" id="file-stats-row">
-          <span id="file-stat-rows"><iconify-icon icon="lucide:rows-3"></iconify-icon> 0 rows</span>
-          <span id="file-stat-cols"><iconify-icon icon="lucide:columns-3"></iconify-icon> 0 cols</span>
+          <span id="file-stat-rows"><iconify-icon icon="material-symbols-light:table-rows-outline" width="14" height="14"></iconify-icon> 0 rows</span>
+          <span id="file-stat-cols"><iconify-icon icon="material-symbols-light:view-column-outline" width="14" height="14"></iconify-icon> 0 cols</span>
         </div>
 
         <select class="sheet-selector" id="sheet-dropdown" title="Select Worksheet">
@@ -203,13 +203,13 @@
 
         <div class="file-actions-row">
           <button class="btn-secondary" id="btn-inspect-schema" title="Inspect columns and data types">
-            <iconify-icon icon="lucide:eye"></iconify-icon> Schema
+            <iconify-icon icon="material-symbols-light:visibility-outline" width="16" height="16"></iconify-icon> Schema
           </button>
           <a class="btn-secondary btn-icon-only" id="btn-download-original" href="#" target="_blank" title="Download Original File">
-            <iconify-icon icon="lucide:download"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:download" width="16" height="16"></iconify-icon>
           </a>
           <button class="btn-danger-outline btn-icon-only" id="btn-delete-active-file" title="Delete this Document from Database">
-            <iconify-icon icon="lucide:trash-2"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:delete-outline" width="16" height="16"></iconify-icon>
           </button>
         </div>
       </div>
@@ -217,7 +217,7 @@
       <!-- Dynamic Recent Files from Database -->
       <div class="sidebar-section-header">
         <div class="section-title-left">
-          <iconify-icon icon="lucide:files"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:folder-outline" width="16" height="16"></iconify-icon>
           <span>Stored Documents</span>
         </div>
         <span class="count-pill" id="doc-count-badge">0</span>
@@ -229,7 +229,7 @@
       <!-- Chat History from Database -->
       <div class="sidebar-section-header">
         <div class="section-title-left">
-          <iconify-icon icon="lucide:message-square"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:chat-bubble-outline" width="16" height="16"></iconify-icon>
           <span>Conversations</span>
         </div>
       </div>
@@ -244,19 +244,19 @@
           <div class="user-names">
             <span class="user-display-name" id="user-name">User</span>
             <span class="user-status" id="user-status-text">
-              <iconify-icon icon="lucide:check-circle" style="color: var(--color-success);"></iconify-icon> Authenticated
+              <iconify-icon icon="material-symbols-light:check-circle-outline" width="14" height="14" style="color: var(--color-success);"></iconify-icon> Authenticated
             </span>
           </div>
         </div>
         <button id="btn-logout" class="btn-logout" title="Sign Out of Account">
-          <iconify-icon icon="lucide:log-out" width="18" height="18"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:logout" width="18" height="18"></iconify-icon>
         </button>
       </div>
     </aside>
 
     <!-- 2. Main Center Content Area (Chat & Execution) -->
     <main class="main-content">
-      <!-- Pattern Monster Subtle Blueprint Texture -->
+      <!-- Pattern Monster Subtle Mindful Texture -->
       <div class="workspace-pattern-bg" aria-hidden="true"></div>
 
       <!-- Top Navbar -->
@@ -264,24 +264,24 @@
         <div class="top-title-area">
           <h3 class="top-title" id="chat-title-header">Spreadsheet Intelligence</h3>
           <span class="status-badge" id="active-sheet-pill">
-            <iconify-icon icon="lucide:info"></iconify-icon> Ready for upload
+            <iconify-icon icon="material-symbols-light:info-outline" width="16" height="16"></iconify-icon> Ready for upload
           </span>
         </div>
         
         <div class="navbar-actions">
           <button class="btn-secondary" id="btn-history-view" title="View SQL analysis records">
-            <iconify-icon icon="lucide:history"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:history" width="16" height="16"></iconify-icon>
             <span>Analysis History</span>
           </button>
           
           <a class="btn-primary" id="btn-download-modified" href="#" style="display: none; text-decoration: none;">
-            <iconify-icon icon="lucide:file-output"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:download" width="16" height="16"></iconify-icon>
             <span>Download Enhanced Excel</span>
           </a>
 
           <!-- Right Sidebar Toggle -->
           <button class="btn-secondary" id="btn-toggle-suggestions" title="Toggle Document Insights & Suggestions">
-            <iconify-icon icon="lucide:sparkles" style="color: var(--color-primary-hover);"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:auto-awesome-outline" width="16" height="16" style="color: var(--color-primary);"></iconify-icon>
             <span>Insights Rail</span>
           </button>
         </div>
@@ -290,10 +290,10 @@
       <!-- Chat Container / Output Stream -->
       <div class="chat-container" id="chat-stream">
         
-        <!-- Clean Futuristic Initial State (Visible when no document loaded) -->
+        <!-- Clean Mindful Initial State (Visible when no document loaded) -->
         <div class="welcome-hero" id="welcome-hero">
           <div class="welcome-icon-wrapper">
-            <iconify-icon icon="lucide:sparkles" width="34" height="34"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:auto-awesome-outline" width="34" height="34"></iconify-icon>
           </div>
           <h1>AI Spreadsheet Intelligence</h1>
           <p>Upload any Excel (.xlsx, .xls) or CSV document. Ask questions in natural language to automatically execute formulas, compute aggregations, and generate interactive charts.</p>
@@ -301,12 +301,12 @@
           <!-- Upload Dropzone -->
           <div class="upload-dropzone" id="upload-dropzone" onclick="document.getElementById('file-input').click()">
             <div class="dropzone-icon">
-              <iconify-icon icon="lucide:upload-cloud" width="44" height="44"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:cloud-upload-outline" width="46" height="46"></iconify-icon>
             </div>
             <h3>Drag & Drop Spreadsheet Here</h3>
             <p>Supports Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv)</p>
             <span class="dropzone-btn">
-              <iconify-icon icon="lucide:plus"></iconify-icon> Select File from Computer
+              <iconify-icon icon="material-symbols-light:add-circle-outline" width="18" height="18"></iconify-icon> Select File from Computer
             </span>
           </div>
         </div>
@@ -317,9 +317,9 @@
       <div class="chat-input-area">
         <div class="chat-input-box">
           <div class="input-wrapper">
-            <textarea id="question-input" rows="1" placeholder="Ask a question about your spreadsheet (e.g. 'How many data is there?' or 'Summarize distributions')..."></textarea>
+            <textarea id="question-input" rows="1" placeholder="Ask anything about your data (e.g. 'How many rows and columns?' or 'Show unique values')..."></textarea>
             <button class="btn-send" id="btn-submit-question" title="Send Question (Enter)">
-              <iconify-icon icon="lucide:arrow-up" width="20" height="20"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:arrow-upward" width="20" height="20"></iconify-icon>
             </button>
           </div>
         </div>
@@ -330,7 +330,7 @@
     <aside class="right-panel" id="right-panel">
       <div class="right-panel-header">
         <div class="panel-title">
-          <iconify-icon icon="lucide:sparkles" style="color: var(--color-primary-hover);"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:auto-awesome-outline" width="18" height="18" style="color: var(--color-primary);"></iconify-icon>
           <span>Suggested Questions</span>
         </div>
         <span class="panel-badge" id="rp-active-doc-tag">No Doc</span>
@@ -338,48 +338,48 @@
 
       <div class="right-panel-content">
 
-        <!-- Pinned Always-Available Questions -->
+        <!-- 1. Quick Insights (Always Available) -->
         <div class="panel-section" id="right-panel-pinned">
           <div class="panel-section-title">
-            <iconify-icon icon="lucide:pin"></iconify-icon> Common Questions
+            <iconify-icon icon="material-symbols-light:push-pin-outline" width="15" height="15"></iconify-icon> Quick Insights
           </div>
           <div class="suggested-questions-list" id="pinned-questions-list">
-            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('How many data is there in this document?')">
-              <iconify-icon icon="lucide:database"></iconify-icon>
-              <span>How many data / records is there?</span>
+            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('Show me a preview of the first 10 rows.')">
+              <iconify-icon icon="material-symbols-light:visibility-outline" width="18" height="18"></iconify-icon>
+              <span>Show me a preview of the first 10 rows.</span>
             </div>
-            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('Summarize key column distributions and null values.')">
-              <iconify-icon icon="lucide:bar-chart-2"></iconify-icon>
-              <span>Summarize key column distributions and null values.</span>
+            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('How many rows and columns does this document have?')">
+              <iconify-icon icon="material-symbols-light:table-rows-outline" width="18" height="18"></iconify-icon>
+              <span>How many rows and columns does this document have?</span>
             </div>
             <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('What data types are in each column?')">
-              <iconify-icon icon="lucide:list-checks"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:view-column-outline" width="18" height="18"></iconify-icon>
               <span>What data types are in each column?</span>
             </div>
-            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('Show me a preview of the first 10 rows.')">
-              <iconify-icon icon="lucide:eye"></iconify-icon>
-              <span>Show me a preview of the first 10 rows.</span>
+            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('Summarize key column distributions and null values.')">
+              <iconify-icon icon="material-symbols-light:bar-chart-4-bars" width="18" height="18"></iconify-icon>
+              <span>Summarize key column distributions and null values.</span>
             </div>
           </div>
         </div>
 
-        <!-- Dynamic AI Suggestions Group (Right-Side Rail) -->
+        <!-- 2. Dynamic Document Deep-Dive (Topic-Aware) -->
         <div class="panel-section">
           <div class="panel-section-title">
-            <iconify-icon icon="lucide:lightbulb"></iconify-icon> Document-Specific
+            <iconify-icon icon="material-symbols-light:lightbulb-outline" width="15" height="15"></iconify-icon> Document Deep-Dive
           </div>
           <div class="suggested-questions-list" id="right-panel-suggestions">
             <div class="empty-suggestions-hint">
-              <iconify-icon icon="lucide:file-question" width="32" height="32" style="color: var(--color-text-dim);"></iconify-icon>
+              <iconify-icon icon="material-symbols-light:dataset-outline" width="32" height="32" style="color: var(--color-text-dim);"></iconify-icon>
               <p>Upload a spreadsheet to automatically generate AI analysis prompts based on your columns.</p>
             </div>
           </div>
         </div>
 
-        <!-- Document Metadata Card -->
+        <!-- 3. Document Metadata Overview -->
         <div class="panel-section" id="right-panel-doc-meta" style="display: none;">
           <div class="panel-section-title">
-            <iconify-icon icon="lucide:file-check-2"></iconify-icon> Document Overview
+            <iconify-icon icon="material-symbols-light:description-outline" width="15" height="15"></iconify-icon> Document Overview
           </div>
           <div class="doc-meta-card">
             <div class="doc-meta-item">
@@ -401,10 +401,10 @@
           </div>
         </div>
 
-        <!-- Columns Explorer -->
+        <!-- 4. Columns Explorer -->
         <div class="panel-section" id="right-panel-columns" style="display: none;">
           <div class="panel-section-title">
-            <iconify-icon icon="lucide:columns-3"></iconify-icon> Column Headers & Types
+            <iconify-icon icon="material-symbols-light:view-column-outline" width="15" height="15"></iconify-icon> Column Headers & Types
           </div>
           <div class="columns-pills-wrap" id="rp-columns-list">
             <!-- Injected dynamically -->
@@ -424,7 +424,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title-with-icon">
-          <iconify-icon icon="lucide:table-cells" width="22" height="22" style="color: var(--color-primary);"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:table-chart-outline" width="22" height="22" style="color: var(--color-primary);"></iconify-icon>
           <h3>Spreadsheet Schema & Column Metadata</h3>
         </div>
         <button class="close-btn" onclick="closeSchemaModal()" title="Close">&times;</button>
@@ -440,12 +440,12 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title-with-icon">
-          <iconify-icon icon="lucide:history" width="22" height="22" style="color: var(--color-primary);"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:history" width="22" height="22" style="color: var(--color-primary);"></iconify-icon>
           <h3>Database Analysis History</h3>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
           <button class="btn-danger-outline" id="btn-clear-history" onclick="clearAllAnalysisHistory()" title="Clear all history from database">
-            <iconify-icon icon="lucide:trash-2"></iconify-icon> Clear All
+            <iconify-icon icon="material-symbols-light:delete-outline" width="16" height="16"></iconify-icon> Clear All
           </button>
           <button class="close-btn" onclick="closeHistoryModal()" title="Close">&times;</button>
         </div>
@@ -457,6 +457,6 @@
   </div>
 
   <!-- Main JavaScript File -->
-  <script src="/static/js/app.js?v=4.0"></script>
+  <script src="/static/js/app.js?v=5.0"></script>
 </body>
 </html>

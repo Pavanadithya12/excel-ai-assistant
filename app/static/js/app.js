@@ -227,7 +227,8 @@ async function handleSignIn() {
     if (!res.ok) {
       if (res.status === 403) {
         showNotification("Email unverified. Enter verification code.", "info");
-        showOTPView(email, res.headers.get("X-Dev-OTP"));
+        const otpCode = data.dev_otp || res.headers.get("X-Dev-OTP");
+        showOTPView(email, otpCode);
         return;
       }
       throw new Error(data.detail || "Sign in failed.");
@@ -391,13 +392,13 @@ function setActiveFile(fileMeta) {
   fileSizeDisplay.innerText = formatBytes(fileMeta.file_size || 0);
 
   // Document Type Shown DIRECTLY Below Document Name
-  fileTypeDisplay.innerHTML = `<iconify-icon icon="lucide:file-badge"></iconify-icon> ${escapeHtml(fileTypeLabel)}`;
+  fileTypeDisplay.innerHTML = `<iconify-icon icon="material-symbols-light:badge-outline" width="14" height="14"></iconify-icon> ${escapeHtml(fileTypeLabel)}`;
 
   // Stats
   const rows = fileMeta.total_rows || 0;
   const cols = fileMeta.total_columns || 0;
-  fileStatRows.innerHTML = `<iconify-icon icon="lucide:rows-3"></iconify-icon> ${rows.toLocaleString()} rows`;
-  fileStatCols.innerHTML = `<iconify-icon icon="lucide:columns-3"></iconify-icon> ${cols.toLocaleString()} cols`;
+  fileStatRows.innerHTML = `<iconify-icon icon="material-symbols-light:table-rows-outline" width="14" height="14"></iconify-icon> ${rows.toLocaleString()} rows`;
+  fileStatCols.innerHTML = `<iconify-icon icon="material-symbols-light:view-column-outline" width="14" height="14"></iconify-icon> ${cols.toLocaleString()} cols`;
 
   // Worksheets Selector
   sheetDropdown.innerHTML = "";
@@ -411,7 +412,7 @@ function setActiveFile(fileMeta) {
 
   const fileId = fileMeta.file_id || fileMeta.id;
   btnDownloadOriginal.href = `/api/excel/${fileId}/download`;
-  activeSheetPill.innerHTML = `<iconify-icon icon="lucide:check-circle-2" style="color: var(--color-success);"></iconify-icon> ${escapeHtml(fileMeta.filename)}`;
+  activeSheetPill.innerHTML = `<iconify-icon icon="material-symbols-light:check-circle-outline" style="color: var(--color-success);"></iconify-icon> ${escapeHtml(fileMeta.filename)}`;
 
   // Populate Right-Side Rail (Suggestions & Document Overview)
   updateRightPanel(fileMeta);
@@ -422,12 +423,19 @@ function setActiveFile(fileMeta) {
 
 // Update the Right-Side Rail with Dynamic Questions and Metadata
 function updateRightPanel(meta) {
-  rpActiveDocTag.innerText = meta.filename ? meta.filename.substring(0, 16) + '...' : 'Active';
+  rpActiveDocTag.innerText = meta.filename ? (meta.filename.length > 16 ? meta.filename.substring(0, 14) + '...' : meta.filename) : 'Active';
 
-  // 1. Dynamic Questions on Right Side
-  let suggestions = meta.dynamic_suggestions || [];
+  // 1. Dynamic Questions on Right Side (Filter out duplicates from pinned section)
+  let rawSuggestions = meta.dynamic_suggestions || [];
+  let suggestions = rawSuggestions.filter(q => {
+    const l = q.toLowerCase();
+    return !l.includes("preview of the first") &&
+           !l.includes("how many rows and columns") &&
+           !l.includes("what data types are in each column") &&
+           !l.includes("summarize key column distributions");
+  });
   
-  // Robust fallback if no suggestions were stored in metadata
+  // Robust fallback if suggestions list is empty
   if (suggestions.length === 0) {
     const sheets = meta.sheets || {};
     const currentSheet = sheetDropdown?.value;
@@ -436,8 +444,6 @@ function updateRightPanel(meta) {
     const numCols = cols.filter(c => c.data_type === "numeric");
     const textCols = cols.filter(c => c.data_type === "text");
 
-    suggestions.push("How many data / records is there in this sheet?");
-    suggestions.push("Summarize key column distributions and null values.");
     if (numCols.length > 0) {
       suggestions.push(`What is the average ${numCols[0].name}?`);
       suggestions.push(`What is the total ${numCols[0].name}?`);
@@ -447,6 +453,12 @@ function updateRightPanel(meta) {
       suggestions.push(`Which ${textCols[0].name} has the highest ${numCols[0].name}?`);
     } else if (textCols.length > 0) {
       suggestions.push(`Show unique values in the ${textCols[0].name} column.`);
+      if (textCols.length > 1) {
+        suggestions.push(`How many unique ${textCols[1].name} entries are there?`);
+      }
+    }
+    if (cols.length >= 2) {
+      suggestions.push(`List top entries sorted by ${cols[0].name}.`);
     }
   }
 
@@ -455,7 +467,7 @@ function updateRightPanel(meta) {
   if (suggestions.length === 0) {
     rightPanelSuggestions.innerHTML = `
       <div class="empty-suggestions-hint">
-        <iconify-icon icon="lucide:sparkles" width="28" height="28" style="color: var(--color-cyan);"></iconify-icon>
+        <iconify-icon icon="material-symbols-light:auto-awesome-outline" width="28" height="28" style="color: var(--color-primary);"></iconify-icon>
         <p>No suggestions available for this document.</p>
       </div>
     `;
@@ -464,7 +476,7 @@ function updateRightPanel(meta) {
       const card = document.createElement("div");
       card.className = "suggested-question-card";
       card.innerHTML = `
-        <iconify-icon icon="lucide:sparkles"></iconify-icon>
+        <iconify-icon icon="material-symbols-light:auto-awesome-outline" width="16" height="16" style="color: var(--color-primary);"></iconify-icon>
         <span>${escapeHtml(q)}</span>
       `;
       card.onclick = () => askDynamicQuestion(q);
@@ -492,7 +504,7 @@ function updateRightPanel(meta) {
       const pill = document.createElement("span");
       const typeClass = col.data_type === "numeric" ? "type-numeric" : (col.data_type === "datetime" ? "type-datetime" : "type-text");
       pill.className = `col-pill-badge ${typeClass}`;
-      pill.innerHTML = `<iconify-icon icon="lucide:tag" width="12" height="12"></iconify-icon> ${escapeHtml(col.name)} <small style="opacity: 0.7;">(${col.data_type})</small>`;
+      pill.innerHTML = `<iconify-icon icon="material-symbols-light:label-outline" width="12" height="12"></iconify-icon> ${escapeHtml(col.name)} <small style="opacity: 0.7;">(${col.data_type})</small>`;
       rpColumnsList.appendChild(pill);
     });
   } else {
@@ -514,10 +526,10 @@ function renderUploadConfirmation(meta) {
   row.className = "message-row assistant";
 
   row.innerHTML = `
-    <div class="message-avatar"><iconify-icon icon="lucide:bot" width="20" height="20"></iconify-icon></div>
+    <div class="message-avatar"><iconify-icon icon="material-symbols-light:smart-toy-outline" width="20" height="20"></iconify-icon></div>
     <div class="message-bubble">
       <div style="font-weight: 700; color: #ffffff; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
-        <iconify-icon icon="lucide:check-circle-2" style="color: var(--color-success);"></iconify-icon>
+        <iconify-icon icon="material-symbols-light:check-circle-outline" style="color: var(--color-success);"></iconify-icon>
         <span>Spreadsheet Connected to Database</span>
       </div>
       <p style="color: var(--color-text-muted); font-size: 13px; margin-bottom: 10px;">
@@ -527,7 +539,7 @@ function renderUploadConfirmation(meta) {
       <div class="upload-confirm-card">
         <div class="confirm-header">
           <div class="confirm-title">
-            <iconify-icon icon="lucide:file-spreadsheet" style="color: var(--color-cyan);"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:table-view-outline" style="color: var(--color-primary);"></iconify-icon>
             <span>${escapeHtml(meta.filename)}</span>
           </div>
           <span class="doc-type-badge-below">${escapeHtml(meta.file_type || "Excel / CSV")}</span>
@@ -596,7 +608,7 @@ async function loadRecentFiles() {
       item.innerHTML = `
         <div class="item-info-col">
           <div class="item-title" title="${escapeHtml(f.filename)}">
-            <iconify-icon icon="lucide:file-spreadsheet" style="color: var(--color-cyan); margin-right: 4px;"></iconify-icon>
+            <iconify-icon icon="material-symbols-light:table-view-outline" style="color: var(--color-primary); margin-right: 4px;"></iconify-icon>
             ${escapeHtml(f.filename)}
           </div>
           <div class="item-meta">
@@ -606,7 +618,7 @@ async function loadRecentFiles() {
           </div>
         </div>
         <button class="btn-item-delete" onclick="event.stopPropagation(); deleteDocumentById(${f.id}, '${escapeHtml(f.filename)}')" title="Delete Document">
-          <iconify-icon icon="lucide:trash-2" width="14" height="14"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:delete-outline" width="14" height="14"></iconify-icon>
         </button>
       `;
       recentFilesList.appendChild(item);
@@ -652,14 +664,14 @@ async function deleteDocumentById(fileId, filename) {
     if (activeFile && (activeFile.file_id === fileId || activeFile.id === fileId)) {
       activeFile = null;
       activeFileCard.style.display = "none";
-      activeSheetPill.innerHTML = `<iconify-icon icon="lucide:info"></iconify-icon> Ready for upload`;
+      activeSheetPill.innerHTML = `<iconify-icon icon="material-symbols-light:info-outline"></iconify-icon> Ready for upload`;
       welcomeHero.style.display = "block";
       rightPanelDocMeta.style.display = "none";
       rightPanelColumns.style.display = "none";
       rpActiveDocTag.innerText = "No Doc";
       rightPanelSuggestions.innerHTML = `
         <div class="empty-suggestions-hint">
-          <iconify-icon icon="lucide:file-question" width="28" height="28"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:help-outline" width="28" height="28"></iconify-icon>
           <p>Upload a spreadsheet to automatically generate AI analysis prompts.</p>
         </div>
       `;
@@ -755,9 +767,9 @@ function appendLoadingBubble() {
   const row = document.createElement("div");
   row.className = "message-row assistant";
   row.innerHTML = `
-    <div class="message-avatar"><iconify-icon icon="lucide:bot" width="20" height="20"></iconify-icon></div>
+    <div class="message-avatar"><iconify-icon icon="material-symbols-light:smart-toy-outline" width="20" height="20"></iconify-icon></div>
     <div class="message-bubble" style="color: var(--color-text-muted);">
-      <iconify-icon icon="lucide:loader-2" class="spin" style="margin-right: 6px;"></iconify-icon>
+      <iconify-icon icon="material-symbols-light:progress-activity" class="spin" style="margin-right: 6px;"></iconify-icon>
       Executing spreadsheet query & generating visualization...
     </div>
   `;
@@ -785,9 +797,9 @@ function appendAssistantMessage(data) {
     innerContent += `
       <div class="formula-card">
         <div class="formula-header">
-          <span><iconify-icon icon="lucide:function-square"></iconify-icon> EXCEL FORMULA</span>
+          <span><iconify-icon icon="material-symbols-light:functions"></iconify-icon> EXCEL FORMULA</span>
           <button class="copy-btn" onclick="copyToClipboard('${escapeHtml(data.formula)}')">
-            <iconify-icon icon="lucide:copy"></iconify-icon> Copy
+            <iconify-icon icon="material-symbols-light:content-copy-outline"></iconify-icon> Copy
           </button>
         </div>
         <div class="formula-code">${escapeHtml(data.formula)}</div>
@@ -799,14 +811,34 @@ function appendAssistantMessage(data) {
   // Analysis Result (Table or Metrics)
   if (data.analysis_result) {
     const res = data.analysis_result;
-    if (res.summary && res.rows) {
+    
+    // Direct Data Table (Preview, Unique Values, Schema Types, etc.)
+    if (res.is_table && res.rows && res.rows.length > 0) {
+      const cols = res.columns || Object.keys(res.rows[0]);
+      let headerHtml = cols.map(c => `<th>${escapeHtml(c)}</th>`).join("");
+      let tableRows = res.rows.map(r => {
+        let cells = cols.map(c => `<td>${escapeHtml(r[c] !== null && r[c] !== undefined ? r[c] : "")}</td>`).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+
+      innerContent += `
+        <div class="analysis-table-wrapper" style="margin-top: 10px;">
+          <table class="analysis-table">
+            <thead>
+              <tr>${headerHtml}</tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+      `;
+    } else if (res.summary && res.rows) {
       let tableRows = res.rows.map(r => {
         const keys = Object.keys(r).filter(k => k !== "formatted_value");
         return `<tr><td>${escapeHtml(r[keys[0]])}</td><td style="font-weight: 700; text-align: right;">${escapeHtml(r.formatted_value || r[keys[1]])}</td></tr>`;
       }).join("");
 
       innerContent += `
-        <div class="analysis-table-wrapper">
+        <div class="analysis-table-wrapper" style="margin-top: 10px;">
           <table class="analysis-table">
             <thead>
               <tr><th>${escapeHtml(res.group_column || "Category")}</th><th style="text-align: right;">${escapeHtml(res.value_column || "Total")}</th></tr>
@@ -834,9 +866,9 @@ function appendAssistantMessage(data) {
       <div class="chart-display-card">
         <img src="${data.chart_url}" alt="Generated Visualization">
         <div class="chart-card-footer">
-          <span><iconify-icon icon="lucide:bar-chart-2"></iconify-icon> ${escapeHtml(data.chart_type || "Visualization")}</span>
+          <span><iconify-icon icon="material-symbols-light:bar-chart-outline"></iconify-icon> ${escapeHtml(data.chart_type || "Visualization")}</span>
           <a href="${data.chart_url}" target="_blank" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; text-decoration: none;">
-            <iconify-icon icon="lucide:maximize-2"></iconify-icon> View Full Resolution
+            <iconify-icon icon="material-symbols-light:open-in-full"></iconify-icon> View Full Resolution
           </a>
         </div>
       </div>
@@ -848,14 +880,14 @@ function appendAssistantMessage(data) {
     innerContent += `
       <div style="margin-top: 10px;">
         <a href="${data.modified_file_url}" class="btn-primary" style="background: var(--color-success); text-decoration: none; display: inline-flex; font-size: 12px;">
-          <iconify-icon icon="lucide:file-down"></iconify-icon> Download Enhanced Excel (.xlsx)
+          <iconify-icon icon="material-symbols-light:download"></iconify-icon> Download Enhanced Excel (.xlsx)
         </a>
       </div>
     `;
   }
 
   row.innerHTML = `
-    <div class="message-avatar"><iconify-icon icon="lucide:bot" width="20" height="20"></iconify-icon></div>
+    <div class="message-avatar"><iconify-icon icon="material-symbols-light:smart-toy-outline" width="20" height="20"></iconify-icon></div>
     <div class="message-bubble">${innerContent}</div>
   `;
   chatStream.appendChild(row);
@@ -888,12 +920,12 @@ async function loadChatSessions() {
         <div class="item-info-col">
           <div class="item-title">${escapeHtml(s.title)}</div>
           <div class="item-meta">
-            <span><iconify-icon icon="lucide:message-circle"></iconify-icon> ${s.message_count} msgs</span>
+            <span><iconify-icon icon="material-symbols-light:chat-bubble-outline"></iconify-icon> ${s.message_count} msgs</span>
             ${s.filename ? `<span>•</span><span>${escapeHtml(s.filename)}</span>` : ''}
           </div>
         </div>
         <button class="btn-item-delete" onclick="event.stopPropagation(); deleteSessionById(${s.id})" title="Delete Conversation">
-          <iconify-icon icon="lucide:trash-2" width="14" height="14"></iconify-icon>
+          <iconify-icon icon="material-symbols-light:delete-outline" width="14" height="14"></iconify-icon>
         </button>
       `;
       chatHistoryList.appendChild(item);
@@ -1052,7 +1084,7 @@ async function reloadHistoryModalContent() {
                 <td style="font-size: 11px; color: var(--color-text-dim);">${new Date(r.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
                 <td>
                   <button class="btn-row-delete" onclick="deleteHistoryItem(${r.id})" title="Delete Record">
-                    <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                    <iconify-icon icon="material-symbols-light:delete-outline"></iconify-icon>
                   </button>
                 </td>
               </tr>
@@ -1132,7 +1164,7 @@ function showNotification(msg, type = "info") {
   notif.style.alignItems = "center";
   notif.style.gap = "8px";
   
-  const icon = type === "success" ? "lucide:check-circle" : (type === "error" ? "lucide:alert-circle" : "lucide:info");
+  const icon = type === "success" ? "material-symbols-light:check-circle-outline" : (type === "error" ? "material-symbols-light:error-outline" : "material-symbols-light:info-outline");
   notif.innerHTML = `<iconify-icon icon="${icon}"></iconify-icon> <span>${escapeHtml(msg)}</span>`;
   
   document.body.appendChild(notif);

@@ -48,6 +48,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Dedicated route to serve charts from settings.CHARTS_DIR (supports /tmp/charts on Vercel)

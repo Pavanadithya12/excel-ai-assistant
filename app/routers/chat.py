@@ -132,10 +132,9 @@ def delete_chat_session(
     session_id: int,
     db: Session = Depends(get_db)
 ):
-    """Deletes a chat session and its messages"""
+    """Deletes a chat session and its messages safely"""
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Chat session not found.")
-    db.delete(session)
-    db.commit()
-    return {"message": "Chat session deleted successfully."}
+    if session:
+        db.delete(session)
+        db.commit()
+    return {"message": "Chat session deleted successfully.", "session_id": session_id}
