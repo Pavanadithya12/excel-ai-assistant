@@ -180,7 +180,16 @@ Rules:
         """
         q_lower = question.lower()
         col_map = {c["name"].lower(): c for c in columns}
-        col_names = list(col_map.keys())
+
+        # Guard: if no columns at all, return a safe general response
+        if not columns:
+            return {
+                "query_type": "general",
+                "explanation": "No column metadata is available for this spreadsheet. Please re-upload the file.",
+                "formula": None,
+                "analysis": None,
+                "chart": None
+            }
 
         # Helper to find closest column name
         def match_column(keywords: List[str], preferred_type: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -342,36 +351,83 @@ Rules:
                 }
             }
 
-        # 3. ANALYSIS INTENT
+        # 3. SUMMARIZE / COUNT / DISTRIBUTION / NULL INTENT (Checked before specific metrics)
+        is_summary = any(k in q_lower for k in [
+            "summarize", "summary", "distribution", "null", "missing",
+            "overview", "describe", "info", "statistics", "data quality",
+            "how many rows", "how many records", "count rows", "total rows",
+            "how many columns", "column info", "data types", "schema",
+            "how many data", "how much data", "how many entries"
+        ]) or (("how many" in q_lower or "count" in q_lower) and ("data" in q_lower or "record" in q_lower or "row" in q_lower))
+        if is_summary:
+            col_names_display = ", ".join([c["name"] for c in columns[:8]]) + ("..." if len(columns) > 8 else "")
+            null_info_lines = []
+            for c in columns:
+                null_c = c.get("null_count", 0)
+                if null_c and null_c > 0:
+                    null_info_lines.append(f"  • {c['name']}: {null_c} missing value(s)")
+            null_summary = "\n".join(null_info_lines) if null_info_lines else "  • No null/missing values detected (complete dataset)."
+
+            num_cols_info = []
+            for c in columns:
+                if c.get("data_type") == "numeric" and c.get("mean_val") is not None:
+                    num_cols_info.append(
+                        f"  • {c['name']}: min={c.get('min_val')}, max={c.get('max_val')}, avg={c.get('mean_val')}"
+                    )
+            num_summary = "\n".join(num_cols_info) if num_cols_info else "  • No numeric columns detected."
+
+            text_cols_list = [c["name"] for c in columns if c.get("data_type") == "text"]
+            text_summary = ", ".join(text_cols_list) if text_cols_list else "None"
+
+            explanation = (
+                f"📊 **Spreadsheet Overview — '{sheet_name}'**\n\n"
+                f"• **Total Records / Rows:** {row_count:,}\n"
+                f"• **Total Columns:** {len(columns)}\n"
+                f"• **Columns:** {col_names_display}\n\n"
+                f"**🔢 Numeric Statistics:**\n{num_summary}\n\n"
+                f"**🔤 Text / Categories:** {text_summary}\n\n"
+                f"**⚠️ Null & Missing Values:**\n{null_summary}"
+            )
+            return {
+                "query_type": "general",
+                "explanation": explanation,
+                "formula": None,
+                "analysis": None,
+                "chart": None
+            }
+
+        # 4. ANALYSIS INTENT
         # Group by average sales for each region
         if ("average" in q_lower or "avg" in q_lower) and ("each" in q_lower or "per" in q_lower or "by" in q_lower or "region" in q_lower):
             grp_col = region_col or product_col or first_text
             val_col = sales_col or first_numeric
-            return {
-                "query_type": "analysis",
-                "explanation": f"Calculated the average {val_col['name']} for each {grp_col['name']}.",
-                "analysis": {
-                    "operation": "groupby",
-                    "agg_func": "mean",
-                    "group_column": grp_col["name"],
-                    "value_column": val_col["name"]
+            if grp_col and val_col:
+                return {
+                    "query_type": "analysis",
+                    "explanation": f"Calculated the average {val_col['name']} for each {grp_col['name']}.",
+                    "analysis": {
+                        "operation": "groupby",
+                        "agg_func": "mean",
+                        "group_column": grp_col["name"],
+                        "value_column": val_col["name"]
+                    }
                 }
-            }
 
         # Highest revenue / top entity
         if any(k in q_lower for k in ["highest", "most", "maximum", "best", "top product"]):
             grp_col = product_col if "product" in q_lower else (customer_col if "customer" in q_lower else (region_col or first_text))
             val_col = sales_col or profit_col or first_numeric
-            return {
-                "query_type": "analysis",
-                "explanation": f"Identified the entity with the highest {val_col['name']}.",
-                "analysis": {
-                    "operation": "extreme",
-                    "extreme": "highest",
-                    "group_column": grp_col["name"],
-                    "value_column": val_col["name"]
+            if grp_col and val_col:
+                return {
+                    "query_type": "analysis",
+                    "explanation": f"Identified the entity with the highest {val_col['name']}.",
+                    "analysis": {
+                        "operation": "extreme",
+                        "extreme": "highest",
+                        "group_column": grp_col["name"],
+                        "value_column": val_col["name"]
+                    }
                 }
-            }
 
         # Top 10 or Top N
         top_match = re.search(r"top\s*(\d+)", q_lower)
@@ -379,38 +435,57 @@ Rules:
             n = int(top_match.group(1)) if top_match else 10
             grp_col = customer_col if "customer" in q_lower else (product_col if "product" in q_lower else (region_col or first_text))
             val_col = sales_col or profit_col or first_numeric
-            return {
-                "query_type": "analysis",
-                "explanation": f"Found the top {n} {grp_col['name']}s by total {val_col['name']}.",
-                "analysis": {
-                    "operation": "top_n",
-                    "n": n,
-                    "group_column": grp_col["name"],
-                    "value_column": val_col["name"]
+            if grp_col and val_col:
+                return {
+                    "query_type": "analysis",
+                    "explanation": f"Found the top {n} {grp_col['name']}s by total {val_col['name']}.",
+                    "analysis": {
+                        "operation": "top_n",
+                        "n": n,
+                        "group_column": grp_col["name"],
+                        "value_column": val_col["name"]
+                    }
                 }
-            }
 
-        # Total sales amount / metric
-        if any(k in q_lower for k in ["total", "sum", "overall", "sales amount"]):
+        # Total sales amount / metric (use word boundaries so 'sum' doesn't match 'summarize')
+        if re.search(r"\b(total|sum|grand total|overall)\b", q_lower):
             val_col = sales_col or first_numeric
+            if val_col:
+                return {
+                    "query_type": "analysis",
+                    "explanation": f"Calculated total {val_col['name']} across all records.",
+                    "analysis": {
+                        "operation": "sum",
+                        "column": val_col["name"]
+                    }
+                }
+
+        # Default fallback — guard against None numeric column
+        num_c = sales_col or first_numeric
+        if num_c:
             return {
                 "query_type": "analysis",
-                "explanation": f"Calculated total {val_col['name']} across all records.",
+                "explanation": f"Analyzed {num_c['name']} across all records in '{sheet_name}'.",
                 "analysis": {
                     "operation": "sum",
-                    "column": val_col["name"]
-                }
+                    "column": num_c["name"]
+                },
+                "formula": None,
+                "chart": None
             }
 
-        # Default fallback
-        num_c = sales_col or first_numeric
+        # Last resort: general text response about the spreadsheet
+        col_names_str = ", ".join([c["name"] for c in columns[:6]])
         return {
-            "query_type": "analysis",
-            "explanation": f"Analyzed {num_c['name'] if num_c else 'the spreadsheet data'}.",
-            "analysis": {
-                "operation": "sum",
-                "column": num_c["name"] if num_c else columns[0]["name"]
-            }
+            "query_type": "general",
+            "explanation": (
+                f"Your spreadsheet '{sheet_name}' contains {row_count:,} rows and {len(columns)} columns: "
+                f"{col_names_str}. "
+                f"Try asking questions like 'Show unique values in {columns[0]['name']}' or 'Summarize key column distributions'."
+            ),
+            "formula": None,
+            "analysis": None,
+            "chart": None
         }
 
 llm_service = LLMService()

@@ -9,7 +9,7 @@
   <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
   
   <!-- Application Stylesheet with Coolors palette & Pattern Monster backgrounds -->
-  <link rel="stylesheet" href="/static/css/style.css?v=3.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=4.0">
 </head>
 <body>
 
@@ -303,32 +303,21 @@
             <div class="dropzone-icon">
               <iconify-icon icon="lucide:upload-cloud" width="44" height="44"></iconify-icon>
             </div>
-            <h3>Drop your spreadsheet here or click to browse</h3>
+            <h3>Drag & Drop Spreadsheet Here</h3>
             <p>Supports Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv)</p>
             <span class="dropzone-btn">
-              <iconify-icon icon="lucide:plus"></iconify-icon> Choose Spreadsheet
+              <iconify-icon icon="lucide:plus"></iconify-icon> Select File from Computer
             </span>
           </div>
         </div>
 
       </div>
 
-      <!-- Chat Input Area -->
+      <!-- Chat Input Area (Clean & Distraction-Free) -->
       <div class="chat-input-area">
         <div class="chat-input-box">
-          <div class="input-options-row">
-            <label class="checkbox-label" title="Enable AI to perform live web research for market benchmarks or formula syntax">
-              <input type="checkbox" id="check-web-research">
-              <span><iconify-icon icon="lucide:globe"></iconify-icon> Web Research</span>
-            </label>
-            <label class="checkbox-label" title="Automatically inject answers, formulas, or charts into a modified .xlsx file">
-              <input type="checkbox" id="check-modify-excel" checked>
-              <span><iconify-icon icon="lucide:file-edit"></iconify-icon> Inject into Downloadable Excel</span>
-            </label>
-          </div>
-          
           <div class="input-wrapper">
-            <textarea id="question-input" rows="1" placeholder="Ask a question about your spreadsheet (e.g. 'What is the average Progress?')..."></textarea>
+            <textarea id="question-input" rows="1" placeholder="Ask a question about your spreadsheet (e.g. 'How many data is there?' or 'Summarize distributions')..."></textarea>
             <button class="btn-send" id="btn-submit-question" title="Send Question (Enter)">
               <iconify-icon icon="lucide:arrow-up" width="20" height="20"></iconify-icon>
             </button>
@@ -348,10 +337,36 @@
       </div>
 
       <div class="right-panel-content">
-        <!-- Suggested Questions Group (Right-Side Rail) -->
+
+        <!-- Pinned Always-Available Questions -->
+        <div class="panel-section" id="right-panel-pinned">
+          <div class="panel-section-title">
+            <iconify-icon icon="lucide:pin"></iconify-icon> Common Questions
+          </div>
+          <div class="suggested-questions-list" id="pinned-questions-list">
+            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('How many data is there in this document?')">
+              <iconify-icon icon="lucide:database"></iconify-icon>
+              <span>How many data / records is there?</span>
+            </div>
+            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('Summarize key column distributions and null values.')">
+              <iconify-icon icon="lucide:bar-chart-2"></iconify-icon>
+              <span>Summarize key column distributions and null values.</span>
+            </div>
+            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('What data types are in each column?')">
+              <iconify-icon icon="lucide:list-checks"></iconify-icon>
+              <span>What data types are in each column?</span>
+            </div>
+            <div class="suggested-question-card pinned-card" onclick="askDynamicQuestion('Show me a preview of the first 10 rows.')">
+              <iconify-icon icon="lucide:eye"></iconify-icon>
+              <span>Show me a preview of the first 10 rows.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic AI Suggestions Group (Right-Side Rail) -->
         <div class="panel-section">
           <div class="panel-section-title">
-            <iconify-icon icon="lucide:lightbulb"></iconify-icon> Click Question to Run
+            <iconify-icon icon="lucide:lightbulb"></iconify-icon> Document-Specific
           </div>
           <div class="suggested-questions-list" id="right-panel-suggestions">
             <div class="empty-suggestions-hint">
@@ -442,6 +457,6 @@
   </div>
 
   <!-- Main JavaScript File -->
-  <script src="/static/js/app.js?v=3.0"></script>
+  <script src="/static/js/app.js?v=4.0"></script>
 </body>
 </html>

@@ -4,10 +4,25 @@ import numpy as np
 
 class AnalysisService:
     @staticmethod
+    def _resolve_column(df: pd.DataFrame, col_name: str) -> Optional[str]:
+        """Resolves a column name handling case-insensitivity and whitespace differences"""
+        if not col_name or df.empty:
+            return None
+        if col_name in df.columns:
+            return col_name
+        target = col_name.strip().lower()
+        for c in df.columns:
+            if str(c).strip().lower() == target:
+                return str(c)
+        return None
+
+    @staticmethod
     def calculate_total_or_metric(df: pd.DataFrame, col_name: str, metric: str = "sum") -> Dict[str, Any]:
         """Calculates total, average, min, max, count for a numeric column"""
-        if col_name not in df.columns:
+        resolved = AnalysisService._resolve_column(df, col_name)
+        if not resolved:
             raise ValueError(f"Column '{col_name}' not found in dataframe.")
+        col_name = resolved
             
         series = pd.to_numeric(df[col_name], errors='coerce').dropna()
         if series.empty:
@@ -49,10 +64,14 @@ class AnalysisService:
         agg_func: str = "sum"
     ) -> Dict[str, Any]:
         """Groups by a categorical column and aggregates a numeric column"""
-        if group_col not in df.columns:
+        resolved_grp = AnalysisService._resolve_column(df, group_col)
+        if not resolved_grp:
             raise ValueError(f"Group column '{group_col}' not found.")
-        if value_col not in df.columns:
+        resolved_val = AnalysisService._resolve_column(df, value_col)
+        if not resolved_val:
             raise ValueError(f"Value column '{value_col}' not found.")
+        group_col = resolved_grp
+        value_col = resolved_val
 
         work_df = df.copy()
         work_df[value_col] = pd.to_numeric(work_df[value_col], errors='coerce')
@@ -139,6 +158,13 @@ class AnalysisService:
         target_col: str
     ) -> Dict[str, Any]:
         """Calculates difference between two columns (Actual vs Target)"""
+        resolved_act = AnalysisService._resolve_column(df, actual_col)
+        resolved_tgt = AnalysisService._resolve_column(df, target_col)
+        if not resolved_act or not resolved_tgt:
+            raise ValueError(f"Difference columns '{actual_col}' or '{target_col}' not found.")
+        actual_col = resolved_act
+        target_col = resolved_tgt
+
         work_df = df.copy()
         work_df[actual_col] = pd.to_numeric(work_df[actual_col], errors='coerce').fillna(0)
         work_df[target_col] = pd.to_numeric(work_df[target_col], errors='coerce').fillna(0)

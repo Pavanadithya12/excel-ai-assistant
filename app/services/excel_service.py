@@ -80,10 +80,15 @@ class ExcelService:
         """Generates dynamic queries tailored directly to actual column names, ignoring dummy Unnamed columns"""
         suggestions = []
         if not sheets_data:
-            return ["What is the total count of rows?", "Summarize this spreadsheet."]
+            return [
+                "How many rows and columns does this document have?",
+                "Summarize key column distributions and null values.",
+                "What data types are in each column?"
+            ]
 
         first_sheet = next(iter(sheets_data.values()))
         cols = first_sheet.get("columns", [])
+        row_count = first_sheet.get("row_count", 0)
         
         # Filter out any column named Unnamed:* or Col_*
         clean_cols = [c for c in cols if not str(c.get("name", "")).startswith("Unnamed:") and not str(c.get("name", "")).startswith("Col_")]
@@ -94,30 +99,39 @@ class ExcelService:
         text_cols = [c["name"] for c in clean_cols if c.get("data_type") == "text"]
         datetime_cols = [c["name"] for c in clean_cols if c.get("data_type") == "datetime"]
 
-        # 1. Total or Average metric
+        # 1. Always-present document meta questions
+        suggestions.append(f"How many rows and columns does this document have?")
+        suggestions.append("Summarize key column distributions and null values.")
+
+        # 2. Total or Average metric on numeric columns
         if numeric_cols:
             suggestions.append(f"What is the average {numeric_cols[0]}?")
-            suggestions.append(f"What is the total {numeric_cols[0]}?")
+            if len(numeric_cols) > 1:
+                suggestions.append(f"What is the total {numeric_cols[1]}?")
+            else:
+                suggestions.append(f"What is the total {numeric_cols[0]}?")
 
-        # 2. Group by / Categorical comparison
+        # 3. Group by / Categorical comparison
         if numeric_cols and text_cols:
             suggestions.append(f"Calculate the average {numeric_cols[0]} for each {text_cols[0]}.")
             suggestions.append(f"Create a bar chart comparing {numeric_cols[0]} by {text_cols[0]}.")
             suggestions.append(f"Which {text_cols[0]} has the highest {numeric_cols[0]}?")
 
-        # 3. Time-series / Line chart
+        # 4. Text-only doc: use text columns
+        if not numeric_cols and text_cols:
+            suggestions.append(f"Show unique values in the {text_cols[0]} column.")
+            if len(text_cols) > 1:
+                suggestions.append(f"How many unique {text_cols[1]} entries are there?")
+
+        # 5. Time-series / Line chart
         if datetime_cols and numeric_cols:
             suggestions.append(f"Show trend of {numeric_cols[0]} over time as a line chart.")
 
-        # 4. Formula suggestion
+        # 6. Formula suggestion
         if numeric_cols:
             suggestions.append(f"Give me an Excel formula to calculate the average of {numeric_cols[0]}.")
 
-        # Fallback if too few
-        if len(suggestions) < 3:
-            suggestions.append("Summarize key column distributions and null values.")
-
-        return suggestions[:6]
+        return suggestions[:8]
 
     @staticmethod
     def inspect_file(filepath: str) -> Dict[str, Any]:

@@ -1,5 +1,5 @@
 // ==========================================================================
-// AI EXCEL ASSISTANT - DYNAMIC APPLICATION CONTROLLER (V3.0)
+// AI EXCEL ASSISTANT - DYNAMIC APPLICATION CONTROLLER (V4.0)
 // 100% Database-Driven • Direct Auth • Right-Side Rail • Document Deletion
 // ==========================================================================
 
@@ -425,7 +425,31 @@ function updateRightPanel(meta) {
   rpActiveDocTag.innerText = meta.filename ? meta.filename.substring(0, 16) + '...' : 'Active';
 
   // 1. Dynamic Questions on Right Side
-  const suggestions = meta.dynamic_suggestions || [];
+  let suggestions = meta.dynamic_suggestions || [];
+  
+  // Robust fallback if no suggestions were stored in metadata
+  if (suggestions.length === 0) {
+    const sheets = meta.sheets || {};
+    const currentSheet = sheetDropdown?.value;
+    const sheetMeta = sheets[currentSheet] || Object.values(sheets)[0];
+    const cols = sheetMeta?.columns?.filter(c => !strStartsWith(c.name, "Unnamed:") && !strStartsWith(c.name, "Col_")) || [];
+    const numCols = cols.filter(c => c.data_type === "numeric");
+    const textCols = cols.filter(c => c.data_type === "text");
+
+    suggestions.push("How many data / records is there in this sheet?");
+    suggestions.push("Summarize key column distributions and null values.");
+    if (numCols.length > 0) {
+      suggestions.push(`What is the average ${numCols[0].name}?`);
+      suggestions.push(`What is the total ${numCols[0].name}?`);
+    }
+    if (numCols.length > 0 && textCols.length > 0) {
+      suggestions.push(`Create a bar chart comparing ${numCols[0].name} by ${textCols[0].name}.`);
+      suggestions.push(`Which ${textCols[0].name} has the highest ${numCols[0].name}?`);
+    } else if (textCols.length > 0) {
+      suggestions.push(`Show unique values in the ${textCols[0].name} column.`);
+    }
+  }
+
   rightPanelSuggestions.innerHTML = "";
 
   if (suggestions.length === 0) {
@@ -632,6 +656,7 @@ async function deleteDocumentById(fileId, filename) {
       welcomeHero.style.display = "block";
       rightPanelDocMeta.style.display = "none";
       rightPanelColumns.style.display = "none";
+      rpActiveDocTag.innerText = "No Doc";
       rightPanelSuggestions.innerHTML = `
         <div class="empty-suggestions-hint">
           <iconify-icon icon="lucide:file-question" width="28" height="28"></iconify-icon>
@@ -675,8 +700,8 @@ async function sendQuestion() {
 
   const fileId = activeFile ? (activeFile.file_id || activeFile.id) : null;
   const sheetName = sheetDropdown ? sheetDropdown.value : null;
-  const enableWeb = document.getElementById("check-web-research").checked;
-  const modifyExcel = document.getElementById("check-modify-excel").checked;
+  const enableWeb = document.getElementById("check-web-research")?.checked || false;
+  const modifyExcel = document.getElementById("check-modify-excel")?.checked || false;
 
   const loadingBubble = appendLoadingBubble();
 
@@ -745,7 +770,15 @@ function appendAssistantMessage(data) {
   const row = document.createElement("div");
   row.className = "message-row assistant";
 
-  let innerContent = `<div>${escapeHtml(data.content)}</div>`;
+  // Render markdown-like formatting: **bold**, newlines → <br>
+  function renderText(text) {
+    if (!text) return "";
+    return escapeHtml(text)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br>");
+  }
+
+  let innerContent = `<div class="message-text">${renderText(data.content)}</div>`;
 
   // Formula Card
   if (data.formula) {

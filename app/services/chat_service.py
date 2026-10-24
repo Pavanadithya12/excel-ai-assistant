@@ -118,7 +118,12 @@ class ChatOrchestratorService:
                 try:
                     if op == "sum" or op == "average":
                         col = a_info.get("column") or a_info.get("value_column")
-                        analysis_result = analysis_service.calculate_total_or_metric(df, col, metric=op)
+                        # Guard: skip if column is None or not in dataframe
+                        if not col or col not in df.columns:
+                            numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+                            col = numeric_cols[0] if numeric_cols else None
+                        if col and col in df.columns:
+                            analysis_result = analysis_service.calculate_total_or_metric(df, col, metric=op)
                     elif op == "groupby":
                         grp = a_info.get("group_column")
                         val = a_info.get("value_column")
