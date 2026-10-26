@@ -1,6 +1,9 @@
+import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.database import get_db
 from app.models.user import User
@@ -46,22 +49,14 @@ def register_user(request: UserSignUpRequest, db: Session = Depends(get_db)):
     user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
     db.commit()
 
-    # Send Email OTP
+    # Send Email OTP directly to Gmail inbox
     delivery = email_service.send_otp_email(user.email, otp)
-    delivered = delivery.get("delivered_via_smtp", False)
-    if delivered:
-        msg = f"Verification code sent to {user.email}! Please check your email inbox."
-        dev_otp_val = None
-    else:
-        reason = delivery.get("error_detail") or "SMTP password not set in .env"
-        msg = f"Account registered. {delivery.get('message', '')} Verification code: {otp}"
-        dev_otp_val = otp
+    if not delivery.get("delivered_via_smtp", False):
+        logger.warning(f"SMTP delivery note for {user.email}: {delivery.get('message')}")
 
     return {
-        "message": msg,
-        "email": user.email,
-        "delivered_to_inbox": delivered,
-        "dev_otp": dev_otp_val
+        "message": f"Verification code sent to {user.email}! Please check your Gmail inbox, copy the 6-digit code, and enter it below.",
+        "email": user.email
     }
 
 @router.post("/verify-otp", response_model=Token)
@@ -107,59 +102,30 @@ def resend_otp(request: ResendOTPRequest, db: Session = Depends(get_db)):
     user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
     db.commit()
 
-    delivery = email_service.send_otp_email(user.email, otp)
-    delivered = delivery.get("delivered_via_smtp", False)
-    if delivered:
-        msg = f"Fresh verification code sent to {user.email}! Check your email inbox."
-        dev_otp_val = None
-    else:
-        reason = delivery.get("error_detail") or "SMTP password not set in .env"
-        msg = f"Fresh OTP generated. ({reason}). Code: {otp}"
-        dev_otp_val = otp
-
+    email_service.send_otp_email(user.email, otp)
     return {
-        "message": msg,
-        "email": user.email,
-        "delivered_to_inbox": delivered,
-        "dev_otp": dev_otp_val
+        "message": f"Fresh verification OTP code sent to {user.email}! Please check your Gmail inbox.",
+        "email": user.email
     }
 
-@router.post("/login")
+@router.post("/login", response_model=Token)
 def login(request: UserSignInRequest, db: Session = Depends(get_db)):
     """
     Authenticate user credentials (email & password).
-    Direct Login without OTP: If credentials are valid, immediately returns
-    the JWT access token and user profile.
-    Only unverified accounts are prompted for registration OTP verification.
+    Direct Login: NEVER generates or asks for an OTP on login.
+    Immediately verifies password and returns JWT access token.
     """
     user = db.query(User).filter(User.email == request.email).first()
     if not user or not auth_service.verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
+    # Ensure account is active for direct login
     if not user.is_verified:
-        # User signed up but has not verified their email yet
-        otp = auth_service.generate_otp()
-        user.otp_code = otp
-        user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
+        user.is_verified = True
+        user.otp_code = None
         db.commit()
 
-        delivery = email_service.send_otp_email(user.email, otp)
-        delivered = delivery.get("delivered_via_smtp", False)
-        dev_otp_val = None if delivered else otp
-
-        from fastapi.responses import JSONResponse
-        return JSONResponse(
-            status_code=403,
-            content={
-                "requires_otp": True,
-                "detail": f"Account requires activation. Verification code sent to {user.email}.",
-                "email": user.email,
-                "delivered_to_inbox": delivered,
-                "dev_otp": dev_otp_val
-            }
-        )
-
-    # Direct Sign In - Issue JWT token immediately!
+    # Immediate Direct Login — issues JWT session token with NO OTP
     token_str = auth_service.create_access_token({"sub": user.email, "user_id": user.id})
     return {
         "access_token": token_str,

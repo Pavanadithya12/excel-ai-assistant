@@ -191,49 +191,18 @@ function switchAuthTab(tab) {
   }
 }
 
-function autoFillOTP() {
-  const devEl = document.getElementById("dev-otp-value");
-  if (devEl && devEl.innerText) {
-    const input = document.getElementById("input-otp");
-    if (input) {
-      input.value = devEl.innerText.trim();
-      input.focus();
-      showNotification("OTP code auto-filled! Click 'Verify & Sign In'.", "success");
-    }
-  }
-}
-
-function showOTPView(email, devOtp = null, deliveredToInbox = false) {
+function showOTPView(email) {
   currentPendingEmail = email;
   document.getElementById("view-signin").style.display = "none";
   document.getElementById("view-signup").style.display = "none";
   document.getElementById("view-otp").style.display = "block";
   document.getElementById("otp-target-email").innerText = email;
 
-  const descEl = document.getElementById("otp-view-desc");
-  if (descEl) {
-    if (deliveredToInbox) {
-      descEl.innerHTML = `We've sent a real verification code to <b style="color: var(--color-primary);">${email}</b>.<br>Please check your inbox (and Spam folder), copy the 6-digit code, and enter it below:`;
-    } else {
-      descEl.innerHTML = `Verification code generated for <b style="color: var(--color-primary);">${email}</b>.<br>Enter the 6-digit code below to authenticate:`;
-    }
-  }
-
-  // Clear input so user types/pastes the real OTP
+  // Clear input so user types/pastes the 6-digit code received in their Gmail inbox
   const inputOtp = document.getElementById("input-otp");
   if (inputOtp) {
     inputOtp.value = "";
     inputOtp.focus();
-  }
-  const devHint = document.getElementById("otp-dev-hint");
-  const devVal = document.getElementById("dev-otp-value");
-  if (devHint && devVal) {
-    if (devOtp) {
-      devVal.innerText = devOtp;
-      devHint.style.display = "flex";
-    } else {
-      devHint.style.display = "none";
-    }
   }
 }
 
@@ -256,15 +225,10 @@ async function handleSignIn() {
     const data = await res.json();
 
     if (!res.ok) {
-      if (res.status === 403) {
-        showNotification(data.detail || "Account requires verification. Check your email.", "info");
-        showOTPView(email, data.dev_otp, data.delivered_to_inbox);
-        return;
-      }
       throw new Error(data.detail || "Sign in failed.");
     }
 
-    // Direct Login Successful!
+    // Direct Login Successful — No OTP required for login
     token = data.access_token;
     localStorage.setItem("token", token);
     currentUser = data.user;
@@ -290,7 +254,7 @@ async function handleSignUp() {
   }
 
   try {
-    showNotification("Creating account & generating verification OTP...", "info");
+    showNotification("Sending 6-digit OTP directly to your Gmail inbox...", "info");
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -299,8 +263,8 @@ async function handleSignUp() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Registration failed.");
 
-    showNotification(data.message || "OTP code ready!", "success");
-    showOTPView(email, data.dev_otp, data.delivered_to_inbox);
+    showNotification(data.message || `Verification code sent to ${email}! Check your Gmail inbox.`, "success");
+    showOTPView(email);
   } catch (err) {
     showNotification(err.message, "error");
   }
@@ -347,8 +311,8 @@ async function handleResendOTP() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Failed to resend code.");
-    showNotification(data.message || "A fresh verification code was generated.", "success");
-    showOTPView(currentPendingEmail, data.dev_otp, data.delivered_to_inbox);
+    showNotification(data.message || "A fresh verification code was sent to your Gmail inbox.", "success");
+    showOTPView(currentPendingEmail);
   } catch (err) {
     showNotification(err.message, "error");
   }

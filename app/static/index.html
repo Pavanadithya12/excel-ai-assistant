@@ -108,38 +108,30 @@
         </div>
       </div>
 
-      <!-- OTP Verification Form -->
+      <!-- OTP Verification Form (New Account Activation via Gmail Inbox) -->
       <div class="auth-form-container" id="view-otp" style="display: none;">
         <div class="otp-notice">
-          <iconify-icon icon="material-symbols-light:mark-email-read-outline" width="34" height="34" style="color: var(--color-primary);"></iconify-icon>
-          <h3 id="otp-view-title">Enter 6-Digit Verification Code</h3>
-          <p id="otp-view-desc">We've dispatched a code for <b id="otp-target-email" style="color: var(--color-primary);">your email</b>.<br>Please enter the 6-digit code below to authenticate:</p>
-        </div>
-
-        <div class="otp-dev-hint" id="otp-dev-hint" style="display: none; background: #fdf2f4; border: 1px solid #f3c5ce; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #5a0017; align-items: center; justify-content: space-between; gap: 8px;">
-          <div>
-            <iconify-icon icon="material-symbols-light:info-outline" width="16" height="16" style="vertical-align: middle;"></iconify-icon>
-            <span id="otp-dev-hint-text">Verification Code:</span> <b id="dev-otp-value" style="letter-spacing: 2px; font-family: monospace; font-size: 16px; color: #800020;"></b>
-          </div>
-          <button type="button" onclick="autoFillOTP()" style="background: #800020; color: #fff; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Auto-fill</button>
+          <iconify-icon icon="material-symbols-light:mark-email-read-outline" width="38" height="38" style="color: var(--color-primary);"></iconify-icon>
+          <h3 id="otp-view-title">Check Your Gmail Inbox</h3>
+          <p id="otp-view-desc">We've sent a 6-digit verification code to <b id="otp-target-email" style="color: var(--color-primary);">your email</b>.<br>Please open your Gmail inbox (or Spam folder), copy the 6-digit code, and enter it below to activate your account:</p>
         </div>
 
         <form id="form-otp" onsubmit="event.preventDefault(); handleVerifyOTP();">
           <div class="form-group">
             <label for="input-otp">
-              <iconify-icon icon="material-symbols-light:tag" width="16" height="16"></iconify-icon> 6-Digit OTP Code
+              <iconify-icon icon="material-symbols-light:tag" width="16" height="16"></iconify-icon> 6-Digit Verification Code
             </label>
             <input type="text" id="input-otp" class="otp-input" placeholder="••••••" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code">
           </div>
           <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-otp">
-            <iconify-icon icon="material-symbols-light:check-circle-outline" width="20" height="20"></iconify-icon> Verify & Sign In
+            <iconify-icon icon="material-symbols-light:check-circle-outline" width="20" height="20"></iconify-icon> Verify & Complete Registration
           </button>
         </form>
 
         <div class="auth-footer-prompt" style="display: flex; justify-content: space-between; align-items: center;">
           <a href="javascript:void(0)" onclick="switchAuthTab('signin')">← Back to Sign In</a>
           <button type="button" class="btn-text" id="btn-resend-otp" onclick="handleResendOTP()" style="background:none; border:none; color:var(--color-primary); cursor:pointer; font-size:12.5px; display:inline-flex; align-items:center; gap:4px; font-weight:600;">
-            <iconify-icon icon="material-symbols-light:refresh" width="16" height="16"></iconify-icon> Resend Code
+            <iconify-icon icon="material-symbols-light:refresh" width="16" height="16"></iconify-icon> Resend Code to Gmail
           </button>
         </div>
       </div>
