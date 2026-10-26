@@ -221,11 +221,13 @@ def build_pdf():
         [Paragraph("SQL Database", style_cell_bold), Paragraph("SQLite (ai_excel.db)", style_cell), Paragraph("3.x (Built-in)", style_cell), Paragraph("Persistent database storing users, uploaded files, chat logs, and analysis history.", style_cell)],
         [Paragraph("Security & Hash", style_cell_bold), Paragraph("bcrypt", style_cell), Paragraph("5.0.0", style_cell), Paragraph("Direct password hashing with salt generation for tamper-proof credentials.", style_cell)],
         [Paragraph("Tokens & JWT", style_cell_bold), Paragraph("python-jose", style_cell), Paragraph("3.5.0", style_cell), Paragraph("Signed HMAC-SHA256 JWT generation and validation for session authentication.", style_cell)],
-        [Paragraph("Email OTP Mailer", style_cell_bold), Paragraph("smtplib (Standard)", style_cell), Paragraph("Built-in", style_cell), Paragraph("Real-time TLS/SSL SMTP transmission of 6-digit verification codes to user mailboxes.", style_cell)],
+        [Paragraph("Email Protocol", style_cell_bold), Paragraph("SMTP + STARTTLS", style_cell), Paragraph("RFC 3207 / 5321", style_cell), Paragraph("Encrypted transport on port 587 using STARTTLS over TLS 1.3 to smtp.gmail.com.", style_cell)],
+        [Paragraph("Email Library", style_cell_bold), Paragraph("smtplib + email.mime", style_cell), Paragraph("Python 3.11 Standard", style_cell), Paragraph("MIMEMultipart alternative container pairing HTML5 branded email with UTF-8 plaintext fallback.", style_cell)],
+        [Paragraph("OTP Generation", style_cell_bold), Paragraph("secrets (CSPRNG)", style_cell), Paragraph("Python 3.11 Standard", style_cell), Paragraph("Cryptographically secure pseudorandom 6-digit numeric generator (secrets.randbelow).", style_cell)],
+        [Paragraph("Google Auth", style_cell_bold), Paragraph("Google App Passwords", style_cell), Paragraph("OAuth 2FA Spec", style_cell), Paragraph("16-character application-specific token bypassing legacy less-secure-apps blocks.", style_cell)],
         [Paragraph("Testing Suite", style_cell_bold), Paragraph("pytest + httpx", style_cell), Paragraph("9.1.1 / 0.28.1", style_cell), Paragraph("Automated unit and integration test suite across auth, spreadsheets, chat, and history.", style_cell)],
-        [Paragraph("Frontend UI", style_cell_bold), Paragraph("HTML5 + CSS3 + JS", style_cell), Paragraph("ES6 Vanilla", style_cell), Paragraph("Vibrant Red & White Single Page App (SPA) featuring Chat, Uploads, Material Symbols Light.", style_cell)],
-        [Paragraph("Deployment 1", style_cell_bold), Paragraph("Render Cloud", style_cell), Paragraph("Blueprint", style_cell), Paragraph("PaaS hosting configured via render.yaml for automated web service build.", style_cell)],
-        [Paragraph("Deployment 2", style_cell_bold), Paragraph("Vercel Serverless", style_cell), Paragraph("WSGI Edge", style_cell), Paragraph("Edge serverless deployment configured via vercel.json + api/index.py.", style_cell)]
+        [Paragraph("Frontend UI", style_cell_bold), Paragraph("HTML5 + CSS3 + JS", style_cell), Paragraph("ES6 Vanilla", style_cell), Paragraph("Rich Burgundy Single Page App (SPA) featuring Chat, Uploads, Material Symbols Light.", style_cell)],
+        [Paragraph("Deployment", style_cell_bold), Paragraph("Render Cloud", style_cell), Paragraph("Blueprint", style_cell), Paragraph("PaaS hosting configured via render.yaml for automated web service build and health checks.", style_cell)]
     ]
     t_stack = Table(stack_data, colWidths=[80, 95, 65, 300])
     t_stack.setStyle(TableStyle([
@@ -331,16 +333,16 @@ def build_pdf():
     story.append(Spacer(1, 8))
 
     # Configuration Guide for Gmail & SMTP
-    story.append(make_section_banner("How to Configure Real Gmail / SMTP Email Delivery in .env"))
+    story.append(make_section_banner("Email OTP Deep-Dive: Architecture, Security & Standards Used"))
     story.append(Spacer(1, 4))
     
     gmail_guide = Paragraph(
-        "<b>Configuring Google Gmail App Passwords (Recommended for Instant Setup):</b><br/>"
-        "1. Open Google Account Security (<b>https://myaccount.google.com/security</b>) ➔ Turn 2-Step Verification <b>ON</b>.<br/>"
-        "2. Search for <b>App Passwords</b> in Google Account search bar ➔ Name it <b>'Excel AI Assistant'</b>.<br/>"
-        "3. Google gives a 16-letter code (e.g. <code>abcd efgh ijkl mnop</code>). In <code>.env</code> (or Render/Vercel settings), enter:<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;<code>SMTP_HOST=\"smtp.gmail.com\" &nbsp;|&nbsp; SMTP_PORT=587 &nbsp;|&nbsp; SMTP_USER=\"you@gmail.com\" &nbsp;|&nbsp; SMTP_PASSWORD=\"your-16-char-code\"</code><br/>"
-        "4. Save and restart server. Real verification emails will instantly arrive in your mailbox on every login!",
+        "<b>Technical Specifications of the Email OTP Mechanism:</b><br/>"
+        "• <b>Generation Algorithm (CSPRNG):</b> Uses Python's native <code>secrets.randbelow(900000) + 100000</code> to generate a cryptographically uniform 6-digit integer (100000 - 999999). Avoids pseudorandom bias of standard <code>random</code>.<br/>"
+        "• <b>MIME Container Format:</b> Assembled via Python <code>email.mime.multipart.MIMEMultipart('alternative')</code> attaching both a UTF-8 plaintext payload and an inline-CSS HTML5 responsive template styled with the project's Burgundy palette.<br/>"
+        "• <b>Transport Encryption:</b> Protocol uses standard <b>RFC 3207 SMTP over STARTTLS</b> on TCP port 587 (with fallback to RFC 8314 SMTPS on port 465) negotiating TLS 1.3 / TLS 1.2 with Google mail gateways (<code>smtp.gmail.com</code>).<br/>"
+        "• <b>Authentication Handshake:</b> Authenticated via SASL PLAIN / LOGIN using Google App Passwords (16-character application token), ensuring compliance with Google 2FA security mandates.<br/>"
+        "• <b>Storage & Expiration Policy:</b> Hashed session expiration is stored in the <code>users</code> SQLite/PostgreSQL table with a strict 10-minute validity timestamp (<code>datetime.utcnow() + timedelta(minutes=10)</code>) and single-use invalidation upon verification.",
         style_prose
     )
     t_gmail = Table([[gmail_guide]], colWidths=[540])
