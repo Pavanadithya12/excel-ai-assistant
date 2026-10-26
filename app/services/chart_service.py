@@ -85,7 +85,7 @@ class ChartService:
             grouped = plot_df.groupby(x_col)[y_col].sum().reset_index()
             grouped = grouped.sort_values(by=y_col, ascending=False).head(15)
             
-            bars = ax.bar(grouped[x_col].astype(str), grouped[y_col], color="#2563EB", edgecolor="#1D4ED8", width=0.6)
+            bars = ax.bar(grouped[x_col].astype(str), grouped[y_col], color="#800020", edgecolor="#5a0017", width=0.6)
             ax.set_ylabel(y_col, fontsize=11, fontweight="bold", color="#334155")
             
             # Value labels on top of bars
@@ -98,7 +98,7 @@ class ChartService:
                             ha='center', va='bottom', fontsize=9, color="#1E293B")
         else:
             counts = df[x_col].value_counts().head(15)
-            ax.bar(counts.index.astype(str), counts.values, color="#3B82F6", edgecolor="#2563EB", width=0.6)
+            ax.bar(counts.index.astype(str), counts.values, color="#9b1137", edgecolor="#800020", width=0.6)
             ax.set_ylabel("Count", fontsize=11, fontweight="bold", color="#334155")
 
         ax.set_xlabel(x_col, fontsize=11, fontweight="bold", color="#334155")
@@ -116,18 +116,18 @@ class ChartService:
                 plot_df = plot_df.dropna(subset=['_dt'])
                 # Group by month or date
                 grouped = plot_df.groupby(plot_df['_dt'].dt.strftime('%Y-%m'))[y_col].sum().reset_index()
-                ax.plot(grouped['_dt'], grouped[y_col], marker='o', linewidth=2.5, color="#0EA5E9", markersize=6)
+                ax.plot(grouped['_dt'], grouped[y_col], marker='o', linewidth=2.5, color="#800020", markersize=6)
                 ax.set_xlabel("Month", fontsize=11, fontweight="bold", color="#334155")
             except Exception:
                 grouped = plot_df.groupby(x_col)[y_col].sum().reset_index()
-                ax.plot(grouped[x_col].astype(str), grouped[y_col], marker='o', linewidth=2.5, color="#0EA5E9")
+                ax.plot(grouped[x_col].astype(str), grouped[y_col], marker='o', linewidth=2.5, color="#800020")
                 ax.set_xlabel(x_col, fontsize=11, fontweight="bold", color="#334155")
                 
             ax.set_ylabel(y_col, fontsize=11, fontweight="bold", color="#334155")
             ax.tick_params(axis='x', rotation=40)
         else:
             counts = plot_df[x_col].value_counts().sort_index()
-            ax.plot(counts.index.astype(str), counts.values, marker='s', linewidth=2, color="#0EA5E9")
+            ax.plot(counts.index.astype(str), counts.values, marker='s', linewidth=2, color="#800020")
             ax.set_ylabel("Count", fontsize=11, fontweight="bold", color="#334155")
 
     @staticmethod

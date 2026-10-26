@@ -21,15 +21,15 @@ def build_pdf():
 
     styles = getSampleStyleSheet()
 
-    # Custom Color Palette: Vibrant Red, Slate Charcoal, Clean Backgrounds
-    C_PRIMARY = colors.HexColor("#dc2626")      # Vibrant Crimson Red
-    C_PRIMARY_DARK = colors.HexColor("#991b1b") # Deep Red
-    C_PRIMARY_LIGHT = colors.HexColor("#fee2e2")# Light Red Tint
+    # Custom Color Palette: Elegant Burgundy, Slate Charcoal, Clean Backgrounds
+    C_PRIMARY = colors.HexColor("#800020")      # Rich Bordeaux Burgundy
+    C_PRIMARY_DARK = colors.HexColor("#5a0017") # Deep Velvet Wine
+    C_PRIMARY_LIGHT = colors.HexColor("#fdf2f4")# Soft Burgundy Rose Tint
     C_TEXT = colors.HexColor("#0f172a")         # Dark Slate Charcoal
     C_MUTED = colors.HexColor("#475569")        # Slate Muted
     C_BORDER = colors.HexColor("#e2e8f0")       # Light Slate Border
     C_BG_ROW = colors.HexColor("#f8fafc")       # Soft Alternate Row
-    C_CODE_BG = colors.HexColor("#1e293b")      # Code Block Background
+    C_CODE_BG = colors.HexColor("#1e1b20")      # Code Block Background (Deep Burgundy/Slate)
     C_CODE_TXT = colors.HexColor("#f8fafc")     # Code Block Text
 
     # Custom Paragraph Styles
@@ -267,13 +267,13 @@ def build_pdf():
     story.append(PageBreak())
 
     # =========================================================================
-    # PAGE 2: REAL EMAIL OTP TWO-FACTOR AUTHENTICATION DEEP-DIVE
+    # PAGE 2: AUTHENTICATION LIFECYCLE: DIRECT LOGIN + SIGN-UP EMAIL OTP
     # =========================================================================
-    story.append(make_section_banner("4. Real Email OTP & Two-Factor Authentication (2FA) Deep-Dive"))
+    story.append(make_section_banner("4. Authentication Architecture: Direct Sign-In & Sign-Up Email OTP"))
     story.append(Spacer(1, 4))
 
     otp_intro = Paragraph(
-        "To provide institutional-grade account security and prevent unauthorized access, the application enforces <b>Real Email Two-Factor Authentication (OTP)</b> on every user login and registration. The system connects directly to standard TLS/SSL SMTP mail servers (such as Google Gmail, Microsoft Outlook, or corporate mail gateways) to transmit a branded, tamper-resistant 6-digit confirmation code directly to the user's inbox.",
+        "The application features a streamlined, production-grade authentication flow: <b>1) Direct Sign-In</b>: Verified users sign in directly with email & password to immediately receive their JWT token without waiting for an OTP. <b>2) Sign-Up Verification OTP</b>: When creating a new account, the server generates a cryptographically random 6-digit confirmation code and delivers it directly to the user's Gmail inbox via TLS SMTP.",
         style_prose
     )
     story.append(otp_intro)
@@ -287,24 +287,24 @@ def build_pdf():
             Paragraph("<b>Action & Technical Implementation Details</b>", style_cell_header)
         ],
         [
-            Paragraph("1. Credential Submission", style_cell_bold),
+            Paragraph("1. Direct Sign-In", style_cell_bold),
+            Paragraph("User ➔ Server", style_cell),
+            Paragraph("User enters email and password into <code>POST /api/auth/login</code>. Bcrypt validates salted password. If verified, immediately issues signed HMAC-SHA256 JWT access token without prompting for OTP.", style_cell)
+        ],
+        [
+            Paragraph("2. New User Sign-Up", style_cell_bold),
             Paragraph("User ➔ Client", style_cell),
-            Paragraph("User enters email and password into the direct sign-in form. Frontend transmits JSON payload to <code>POST /api/auth/login</code>.", style_cell)
+            Paragraph("User submits name, email, and password to <code>POST /api/auth/register</code>. Backend hashes password via bcrypt (rounds=12) and creates unverified User record.", style_cell)
         ],
         [
-            Paragraph("2. Bcrypt Validation", style_cell_bold),
-            Paragraph("FastAPI ➔ DB", style_cell),
-            Paragraph("Backend verifies password hash against database record using salted bcrypt. If invalid, returns 401 Unauthorized immediately.", style_cell)
-        ],
-        [
-            Paragraph("3. OTP Generation & DB Lock", style_cell_bold),
+            Paragraph("3. 6-Digit Code Generation", style_cell_bold),
             Paragraph("Auth Service", style_cell),
             Paragraph("Server generates a cryptographically random 6-digit numeric OTP code (<code>secrets.randbelow</code>). Sets <code>otp_code</code> and <code>otp_expires_at = UTC + 10 minutes</code> in the User SQL table.", style_cell)
         ],
         [
             Paragraph("4. Real SMTP Transmission", style_cell_bold),
             Paragraph("Email Service", style_cell),
-            Paragraph("<code>email_service.send_otp_email()</code> builds a multipart (HTML + plain text) email with vibrant Red & White styling and connects to SMTP host (e.g. <code>smtp.gmail.com:587</code> with STARTTLS) to deliver the code.", style_cell)
+            Paragraph("<code>email_service.send_otp_email()</code> builds a multipart (HTML + plain text) email with rich Burgundy styling and connects to SMTP host (e.g. <code>smtp.gmail.com:587</code> with STARTTLS) to deliver the code.", style_cell)
         ],
         [
             Paragraph("5. Inbox Retrieval", style_cell_bold),
@@ -314,7 +314,7 @@ def build_pdf():
         [
             Paragraph("6. Code Verification & JWT Issuance", style_cell_bold),
             Paragraph("Client ➔ Server", style_cell),
-            Paragraph("User pastes the 6-digit code into the verification modal (<code>POST /api/auth/verify-otp</code>). Server checks expiration and match. Upon success, clears the OTP, marks account verified, and issues signed HMAC-SHA256 JWT.", style_cell)
+            Paragraph("User enters the 6-digit code into the verification modal (<code>POST /api/auth/verify-otp</code>). Server checks expiration and match. Upon success, marks account verified and issues signed JWT access token.", style_cell)
         ]
     ]
     t_otp_steps = Table(otp_steps_data, colWidths=[110, 75, 355])

@@ -47,12 +47,12 @@ The {settings.PROJECT_NAME} Team
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 15px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" style="max-width: 520px; background-color: #ffffff; border-radius: 12px; border: 1px solid #fee2e2; box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.08); overflow: hidden;">
+        <table role="presentation" width="100%" style="max-width: 520px; background-color: #ffffff; border-radius: 12px; border: 1px solid #f3c5ce; box-shadow: 0 10px 25px -5px rgba(128, 0, 32, 0.08); overflow: hidden;">
           <!-- Header Banner -->
           <tr>
-            <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 28px 30px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #9b1137 0%, #800020 100%); padding: 28px 30px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Excel AI Assistant</h1>
-              <p style="margin: 6px 0 0; color: #fee2e2; font-size: 13px;">Secure Two-Factor Authentication</p>
+              <p style="margin: 6px 0 0; color: #fce7f3; font-size: 13px;">Secure Two-Factor Authentication</p>
             </td>
           </tr>
           <!-- Content Body -->
@@ -64,12 +64,12 @@ The {settings.PROJECT_NAME} Team
               </p>
               
               <!-- OTP Box -->
-              <div style="background-color: #fff5f5; border: 2px dashed #f87171; border-radius: 10px; padding: 22px; text-align: center; margin: 25px 0;">
-                <span style="font-family: 'Courier New', Courier, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #dc2626; display: inline-block;">
+              <div style="background-color: #fdf2f4; border: 2px dashed #800020; border-radius: 10px; padding: 22px; text-align: center; margin: 25px 0;">
+                <span style="font-family: 'Courier New', Courier, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #800020; display: inline-block;">
                   {otp_code}
                 </span>
-                <p style="margin: 10px 0 0; font-size: 12px; color: #7f1d1d; font-weight: 600;">
-                  ⏳ Code expires in 10 minutes
+                <p style="margin: 10px 0 0; font-size: 12px; color: #5a0017; font-weight: 600;">
+                  Code expires in 10 minutes
                 </p>
               </div>
 

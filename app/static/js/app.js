@@ -247,7 +247,7 @@ async function handleSignIn() {
   }
 
   try {
-    showNotification("Verifying credentials & sending OTP code...", "info");
+    showNotification("Signing in...", "info");
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -257,19 +257,14 @@ async function handleSignIn() {
 
     if (!res.ok) {
       if (res.status === 403) {
-        showNotification("Account requires verification. Check your email.", "info");
+        showNotification(data.detail || "Account requires verification. Check your email.", "info");
         showOTPView(email, data.dev_otp, data.delivered_to_inbox);
         return;
       }
       throw new Error(data.detail || "Sign in failed.");
     }
 
-    if (data.requires_otp) {
-      showNotification(data.message || `OTP sent to ${email}.`, "success");
-      showOTPView(email, data.dev_otp, data.delivered_to_inbox);
-      return;
-    }
-
+    // Direct Login Successful!
     token = data.access_token;
     localStorage.setItem("token", token);
     currentUser = data.user;

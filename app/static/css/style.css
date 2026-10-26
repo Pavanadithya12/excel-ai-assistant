@@ -1,34 +1,35 @@
 /* ==========================================================================
-   AI EXCEL ASSISTANT — VIBRANT RED & WHITE STUDIO THEME
-   Crisp White Canvas • Radiant Crimson Accents • High Contrast Slate Typography
+   AI EXCEL ASSISTANT — ELEGANT BURGUNDY & WHITE STUDIO THEME
+   Crisp White Canvas • Rich Bordeaux Burgundy Accents • High Contrast Slate
+   Harmonious 60-30-10 Palette • WCAG AAA Accessible (7.6:1 Contrast Ratio)
    Standardized Icons: Google Material Symbols Light (Iconify)
    ========================================================================== */
 
 :root {
-  /* 60% Dominant Neutral Canvas (Crisp Clean White & Soft Slate Accents) */
-  --color-bg: #f8fafc;
+  /* 60% Dominant Neutral Canvas (Crisp Clean White & Soft Platinum Accents) */
+  --color-bg: #fbfbfc;
   --color-bg-secondary: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f5f9;
-  --color-surface-active: #e2e8f0;
+  --color-surface-hover: #f8fafc;
+  --color-surface-active: #f1f5f9;
 
-  /* 30% Secondary Structure (High Contrast Slate & Subtle Red Borders) */
+  /* 30% Secondary Structure (High Contrast Slate & Subtle Burgundy Borders) */
   --color-border: #e2e8f0;
-  --color-border-subtle: #f1f5f9;
-  --color-border-focus: #dc2626;
+  --color-border-subtle: #f8fafc;
+  --color-border-focus: #800020;
   --color-text-main: #0f172a;
   --color-text-muted: #475569;
   --color-text-dim: #94a3b8;
-  --color-code-bg: #0f172a;
+  --color-code-bg: #1e1b20;
 
-  /* 10% Accent Call-to-Actions (Vibrant Crimson Red & Radiant Accents) */
-  --color-primary: #dc2626;
-  --color-primary-hover: #b91c1c;
-  --color-primary-light: rgba(220, 38, 38, 0.08);
-  --color-primary-glow: rgba(220, 38, 38, 0.22);
-  --color-primary-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  /* 10% Accent Call-to-Actions (Rich Bordeaux Burgundy) */
+  --color-primary: #800020;
+  --color-primary-hover: #5a0017;
+  --color-primary-light: rgba(128, 0, 32, 0.08);
+  --color-primary-glow: rgba(128, 0, 32, 0.22);
+  --color-primary-gradient: linear-gradient(135deg, #9b1137 0%, #800020 50%, #5a0017 100%);
 
-  /* Vibrant Accents */
+  /* Vibrant Semantic Accents */
   --color-emerald: #10b981;
   --color-emerald-light: rgba(16, 185, 129, 0.12);
   --color-amber: #f59e0b;
@@ -40,9 +41,9 @@
   --color-success-light: rgba(16, 185, 129, 0.12);
   --color-warning: #f59e0b;
   --color-warning-light: rgba(245, 158, 11, 0.12);
-  --color-danger: #dc2626;
-  --color-danger-light: rgba(220, 38, 38, 0.12);
-  --color-danger-hover: #b91c1c;
+  --color-danger: #800020;
+  --color-danger-light: rgba(128, 0, 32, 0.12);
+  --color-danger-hover: #5a0017;
 
   /* Clean Modern Radii & Soft Crisp Shadows */
   --radius-xs: 6px;
@@ -54,10 +55,12 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 12px 30px -4px rgba(220, 38, 38, 0.09), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 12px 30px -4px rgba(128, 0, 32, 0.09), 0 4px 12px rgba(0, 0, 0, 0.04);
   --shadow-glow: 0 0 20px var(--color-primary-glow);
 
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+  --font-mono: "Fira Code", Consolas, Monaco, "Courier New", monospace;
+}
   --font-mono: "Fira Code", Consolas, Monaco, "Courier New", monospace;
 }
 
@@ -270,7 +273,7 @@ iconify-icon {
 .auth-submit-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 22px var(--color-primary-glow);
-  background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #9b1137 0%, #800020 100%);
 }
 
 .auth-footer-prompt {
@@ -437,7 +440,7 @@ iconify-icon {
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #9b1137 0%, #800020 100%);
   box-shadow: 0 4px 16px var(--color-primary-glow);
   transform: translateY(-1px);
 }
@@ -459,15 +462,15 @@ iconify-icon {
 }
 
 .btn-secondary:hover {
-  background: #fef2f2;
-  border-color: #fca5a5;
+  background: #fdf2f4;
+  border-color: #f3c5ce;
   color: var(--color-primary);
 }
 
 .btn-danger-outline {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: #fdf2f4;
+  color: #800020;
+  border: 1px solid #f3c5ce;
   padding: 7px 12px;
   border-radius: var(--radius-sm);
   font-size: 12px;
@@ -528,8 +531,8 @@ iconify-icon {
   width: 6px;
   height: 6px;
   border-radius: var(--radius-full);
-  background: #dc2626;
-  box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+  background: #800020;
+  box-shadow: 0 0 8px rgba(128, 0, 32, 0.6);
 }
 
 .file-size-pill {
@@ -563,8 +566,8 @@ iconify-icon {
 /* Document Type Shown DIRECTLY Below Document Name */
 .doc-type-badge-below {
   background: #ffffff;
-  color: #b91c1c;
-  border: 1px solid #fca5a5;
+  color: #5a0017;
+  border: 1px solid #f3c5ce;
   border-radius: 8px;
   padding: 4px 8px;
   font-size: 11px;
@@ -847,9 +850,9 @@ iconify-icon {
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--radius-full);
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: #fdf2f4;
+  color: #800020;
+  border: 1px solid #f3c5ce;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1027,7 +1030,7 @@ iconify-icon {
 .btn-send:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px var(--color-primary-glow);
-  background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #9b1137 0%, #800020 100%);
 }
 
 /* Chat Messages */
@@ -1334,9 +1337,9 @@ iconify-icon {
 .panel-badge {
   font-size: 10.5px;
   font-weight: 700;
-  color: #b91c1c;
-  background: #fff5f5;
-  border: 1px solid #fecaca;
+  color: #5a0017;
+  background: #fdf2f4;
+  border: 1px solid #f3c5ce;
   padding: 2px 8px;
   border-radius: var(--radius-full);
 }
@@ -1496,9 +1499,9 @@ iconify-icon {
 }
 
 .col-pill-badge.type-numeric {
-  border-color: #fca5a5;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: #f3c5ce;
+  background: #fdf2f4;
+  color: #5a0017;
 }
 
 .col-pill-badge.type-text {

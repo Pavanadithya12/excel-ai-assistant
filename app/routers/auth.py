@@ -128,43 +128,44 @@ def resend_otp(request: ResendOTPRequest, db: Session = Depends(get_db)):
 def login(request: UserSignInRequest, db: Session = Depends(get_db)):
     """
     Authenticate user credentials (email & password).
-    To ensure real Two-Factor Email Security, dispatches a fresh 6-digit OTP
-    to the user's email address on every sign-in.
-    The user then enters the OTP from their email to obtain their JWT session token.
+    Direct Login without OTP: If credentials are valid, immediately returns
+    the JWT access token and user profile.
+    Only unverified accounts are prompted for registration OTP verification.
     """
     user = db.query(User).filter(User.email == request.email).first()
     if not user or not auth_service.verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
-    # Generate fresh 6-digit verification OTP
-    otp = auth_service.generate_otp()
-    user.otp_code = otp
-    user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
-    db.commit()
+    if not user.is_verified:
+        # User signed up but has not verified their email yet
+        otp = auth_service.generate_otp()
+        user.otp_code = otp
+        user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
+        db.commit()
 
-    # Dispatch email to user's address
-    delivery = email_service.send_otp_email(user.email, otp)
-    delivered = delivery.get("delivered_via_smtp", False)
+        delivery = email_service.send_otp_email(user.email, otp)
+        delivered = delivery.get("delivered_via_smtp", False)
+        dev_otp_val = None if delivered else otp
 
-    if delivered:
-        msg = f"Verification code sent to {user.email}! Please check your email inbox, copy the 6-digit code, and enter it below."
-        dev_otp_val = None
-    else:
-        reason = delivery.get("error_detail") or "SMTP password not configured in .env"
-        msg = f"Sign-in verified. ({reason}). Enter code: {otp}"
-        dev_otp_val = otp
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=403,
+            content={
+                "requires_otp": True,
+                "detail": f"Account requires activation. Verification code sent to {user.email}.",
+                "email": user.email,
+                "delivered_to_inbox": delivered,
+                "dev_otp": dev_otp_val
+            }
+        )
 
-    from fastapi.responses import JSONResponse
-    return JSONResponse(
-        status_code=200,
-        content={
-            "requires_otp": True,
-            "message": msg,
-            "email": user.email,
-            "delivered_to_inbox": delivered,
-            "dev_otp": dev_otp_val
-        }
-    )
+    # Direct Sign In - Issue JWT token immediately!
+    token_str = auth_service.create_access_token({"sub": user.email, "user_id": user.id})
+    return {
+        "access_token": token_str,
+        "token_type": "bearer",
+        "user": user
+    }
 
 @router.get("/me", response_model=UserProfileResponse)
 def get_user_profile(
