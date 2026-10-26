@@ -558,17 +558,15 @@ def build_pdf():
     story.append(t_api)
     story.append(Spacer(1, 6))
 
-    # Section 8: Local Setup & Run
-    story.append(make_section_banner("8. Local Setup & 1-Click Launch Instructions"))
+    # Section 8: Local Setup & VS Code 1-Click Launch
+    story.append(make_section_banner("8. Local Setup & VS Code 1-Click Launch"))
     story.append(Spacer(1, 3))
     setup_p = Paragraph(
-        "<b>Step 1: Clone Repositories</b><br/>"
-        "<code>git clone https://github.com/Pavanadithya12/excel-ai-assistant.git</code><br/>"
-        "<b>Step 2: Automated 1-Click Launch (Windows)</b><br/>"
-        "Double-click <code>start.bat</code> (or run <code>.\\start.ps1</code>). Automatically verifies Python 3.11, initializes virtual environment, installs dependencies, and launches Uvicorn at <b>http://localhost:8000</b>.<br/>"
-        "<b>Step 3: Manual Startup</b><br/>"
-        "<code>python -m venv .venv &nbsp;|&nbsp; .\\.venv\\Scripts\\activate &nbsp;|&nbsp; pip install -r requirements.txt</code><br/>"
-        "<code>uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload</code>",
+        "<b>1. VS Code 1-Click Launch (Recommended):</b><br/>"
+        "Press <b>F5</b> in VS Code. The pre-configured <code>.vscode/launch.json</code> and <code>main.py</code> will automatically detect your <code>.venv</code> environment and launch the server.<br/>"
+        "<b>2. Terminal / Command Line:</b><br/>"
+        "Run <code>python main.py</code> (auto-detects virtual environment) or <code>.\\start.bat</code>. Server runs at <b>http://127.0.0.1:8000</b>.<br/>"
+        "<b>3. OTP Workflow:</b> Real emails dispatch via Gmail SMTP when <code>SMTP_PASSWORD</code> is set in <code>.env</code>. If empty, the UI displays the 6-digit code with an <b>[Auto-fill]</b> button for seamless testing.",
         style_prose
     )
     t_setup = Table([[setup_p]], colWidths=[540])
@@ -583,19 +581,17 @@ def build_pdf():
     story.append(t_setup)
     story.append(Spacer(1, 6))
 
-    # Section 9: Cloud Deployment & Test Suite
-    story.append(make_section_banner("9. Cloud Deployment & Automated Testing"))
+    # Section 9: Verified Live Cloud Deployment & Architecture
+    story.append(make_section_banner("9. Live Cloud Deployment (Verified Live at onrender.com)"))
     story.append(Spacer(1, 3))
     deploy_p = Paragraph(
-        "<b>Render Deployment (Blueprint PaaS):</b><br/>"
-        "1. In <b>dashboard.render.com</b> ➔ Click <b>New +</b> ➔ <b>Blueprint</b> ➔ Connect GitHub repository.<br/>"
-        "2. Render reads <code>render.yaml</code>, installs packages from UTF-8 <code>requirements.txt</code>, and launches Uvicorn on <code>$PORT</code>.<br/>"
-        "3. In Environment Variables, configure <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>, and <code>GEMINI_API_KEY</code>.<br/>"
-        "<i>*Note on Free Tier: Render sleeps after 15m inactivity. Allow 50-60s on first request to wake up the service.</i><br/>"
-        "<b>Vercel Serverless Deployment:</b><br/>"
-        "Run <code>vercel --prod</code> or connect Git. Automatically builds via <code>api/index.py</code> with ephemeral SQLite routing.<br/>"
-        "<b>Automated Test Suite:</b><br/>"
-        "Run <code>pytest -v</code>. Executes 15 comprehensive unit tests covering auth, bcrypt hashing, OTP lifecycle, Excel metadata extraction, formula validation, and Pandas calculations.",
+        "<b>Live Production URL:</b> <b>https://ai-excel-assistant.onrender.com</b> (Verified Active & Operational)<br/>"
+        "<b>Cloud Architecture & Deployment Lifecycle:</b><br/>"
+        "1. <b>Continuous Deployment:</b> Every git push to <code>origin/main</code> triggers an automated Render build reading <code>render.yaml</code>.<br/>"
+        "2. <b>Start Command:</b> <code>uvicorn main:app --host 0.0.0.0 --port $PORT</code> automatically binds to Render's allocated web port.<br/>"
+        "3. <b>Dual-Mode OTP in Production:</b> Users receive OTP directly in their Gmail inbox when SMTP is configured. If SMTP is unconfigured, the system provides on-screen verification so users can test immediately.<br/>"
+        "4. <b>Free Tier Wake-up:</b> Render spins down free containers after 15 minutes of inactivity. The first request takes 45-60 seconds to boot the server.<br/>"
+        "5. <b>Automated Tests:</b> Run <code>pytest -v</code> for 15 unit tests covering auth, bcrypt, OTP, formulas, and Excel processing.",
         style_prose
     )
     t_deploy = Table([[deploy_p]], colWidths=[540])
