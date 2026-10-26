@@ -1,4 +1,12 @@
 import os
+import sys
+
+# Ensure project root is in sys.path even when app/main.py is executed directly
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_file_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

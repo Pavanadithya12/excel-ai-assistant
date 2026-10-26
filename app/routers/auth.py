@@ -47,12 +47,21 @@ def register_user(request: UserSignUpRequest, db: Session = Depends(get_db)):
     db.commit()
 
     # Send Email OTP
-    email_service.send_otp_email(user.email, otp)
+    delivery = email_service.send_otp_email(user.email, otp)
+    delivered = delivery.get("delivered_via_smtp", False)
+    if delivered:
+        msg = f"Verification code sent to {user.email}! Please check your email inbox."
+        dev_otp_val = None
+    else:
+        reason = delivery.get("error_detail") or "SMTP password not set in .env"
+        msg = f"Account registered. {delivery.get('message', '')} Verification code: {otp}"
+        dev_otp_val = otp
 
     return {
-        "message": f"Registration initiated. Verification OTP sent to {user.email}.",
+        "message": msg,
         "email": user.email,
-        "dev_otp": otp  # Included for immediate UI testing convenience
+        "delivered_to_inbox": delivered,
+        "dev_otp": dev_otp_val
     }
 
 @router.post("/verify-otp", response_model=Token)
@@ -98,10 +107,21 @@ def resend_otp(request: ResendOTPRequest, db: Session = Depends(get_db)):
     user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
     db.commit()
 
-    email_service.send_otp_email(user.email, otp)
+    delivery = email_service.send_otp_email(user.email, otp)
+    delivered = delivery.get("delivered_via_smtp", False)
+    if delivered:
+        msg = f"Fresh verification code sent to {user.email}! Check your email inbox."
+        dev_otp_val = None
+    else:
+        reason = delivery.get("error_detail") or "SMTP password not set in .env"
+        msg = f"Fresh OTP generated. ({reason}). Code: {otp}"
+        dev_otp_val = otp
+
     return {
-        "message": f"Fresh verification OTP sent to {user.email}.",
-        "dev_otp": otp
+        "message": msg,
+        "email": user.email,
+        "delivered_to_inbox": delivered,
+        "dev_otp": dev_otp_val
     }
 
 @router.post("/login")
@@ -122,16 +142,27 @@ def login(request: UserSignInRequest, db: Session = Depends(get_db)):
     user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
     db.commit()
 
-    # Dispatch real email to user's address
-    email_service.send_otp_email(user.email, otp)
+    # Dispatch email to user's address
+    delivery = email_service.send_otp_email(user.email, otp)
+    delivered = delivery.get("delivered_via_smtp", False)
+
+    if delivered:
+        msg = f"Verification code sent to {user.email}! Please check your email inbox, copy the 6-digit code, and enter it below."
+        dev_otp_val = None
+    else:
+        reason = delivery.get("error_detail") or "SMTP password not configured in .env"
+        msg = f"Sign-in verified. ({reason}). Enter code: {otp}"
+        dev_otp_val = otp
 
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=200,
         content={
             "requires_otp": True,
-            "message": f"Verification code sent to {user.email}. Please check your email inbox, copy the 6-digit code, and enter it below.",
-            "email": user.email
+            "message": msg,
+            "email": user.email,
+            "delivered_to_inbox": delivered,
+            "dev_otp": dev_otp_val
         }
     )
 

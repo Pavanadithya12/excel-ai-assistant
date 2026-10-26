@@ -112,12 +112,16 @@
       <div class="auth-form-container" id="view-otp" style="display: none;">
         <div class="otp-notice">
           <iconify-icon icon="material-symbols-light:mark-email-read-outline" width="34" height="34" style="color: var(--color-primary);"></iconify-icon>
-          <h3>Enter 6-Digit Email Code</h3>
-          <p>We've sent a real verification code to <b id="otp-target-email" style="color: var(--color-primary);">your email</b>.<br>Please copy the code from your inbox and enter it below:</p>
+          <h3 id="otp-view-title">Enter 6-Digit Verification Code</h3>
+          <p id="otp-view-desc">We've dispatched a code for <b id="otp-target-email" style="color: var(--color-primary);">your email</b>.<br>Please enter the 6-digit code below to authenticate:</p>
         </div>
 
-        <div class="otp-dev-hint" id="otp-dev-hint" style="display: none;">
-          <iconify-icon icon="material-symbols-light:terminal" width="16" height="16"></iconify-icon> Verification Code: <span id="dev-otp-value"></span>
+        <div class="otp-dev-hint" id="otp-dev-hint" style="display: none; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #9f1239; align-items: center; justify-content: space-between; gap: 8px;">
+          <div>
+            <iconify-icon icon="material-symbols-light:info-outline" width="16" height="16" style="vertical-align: middle;"></iconify-icon>
+            <span id="otp-dev-hint-text">Verification Code:</span> <b id="dev-otp-value" style="letter-spacing: 2px; font-family: monospace; font-size: 16px; color: #dc2626;"></b>
+          </div>
+          <button type="button" onclick="autoFillOTP()" style="background: #dc2626; color: #fff; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Auto-fill</button>
         </div>
 
         <form id="form-otp" onsubmit="event.preventDefault(); handleVerifyOTP();">

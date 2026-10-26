@@ -191,22 +191,49 @@ function switchAuthTab(tab) {
   }
 }
 
-function showOTPView(email) {
+function autoFillOTP() {
+  const devEl = document.getElementById("dev-otp-value");
+  if (devEl && devEl.innerText) {
+    const input = document.getElementById("input-otp");
+    if (input) {
+      input.value = devEl.innerText.trim();
+      input.focus();
+      showNotification("OTP code auto-filled! Click 'Verify & Sign In'.", "success");
+    }
+  }
+}
+
+function showOTPView(email, devOtp = null, deliveredToInbox = false) {
   currentPendingEmail = email;
   document.getElementById("view-signin").style.display = "none";
   document.getElementById("view-signup").style.display = "none";
   document.getElementById("view-otp").style.display = "block";
   document.getElementById("otp-target-email").innerText = email;
 
-  // Clear input so user types/pastes the real OTP from their email inbox
+  const descEl = document.getElementById("otp-view-desc");
+  if (descEl) {
+    if (deliveredToInbox) {
+      descEl.innerHTML = `We've sent a real verification code to <b style="color: var(--color-primary);">${email}</b>.<br>Please check your inbox (and Spam folder), copy the 6-digit code, and enter it below:`;
+    } else {
+      descEl.innerHTML = `Verification code generated for <b style="color: var(--color-primary);">${email}</b>.<br>Enter the 6-digit code below to authenticate:`;
+    }
+  }
+
+  // Clear input so user types/pastes the real OTP
   const inputOtp = document.getElementById("input-otp");
   if (inputOtp) {
     inputOtp.value = "";
     inputOtp.focus();
   }
   const devHint = document.getElementById("otp-dev-hint");
-  if (devHint) {
-    devHint.style.display = "none";
+  const devVal = document.getElementById("dev-otp-value");
+  if (devHint && devVal) {
+    if (devOtp) {
+      devVal.innerText = devOtp;
+      devHint.style.display = "flex";
+    } else {
+      devHint.style.display = "none";
+    }
   }
 }
 
@@ -231,15 +258,15 @@ async function handleSignIn() {
     if (!res.ok) {
       if (res.status === 403) {
         showNotification("Account requires verification. Check your email.", "info");
-        showOTPView(email);
+        showOTPView(email, data.dev_otp, data.delivered_to_inbox);
         return;
       }
       throw new Error(data.detail || "Sign in failed.");
     }
 
     if (data.requires_otp) {
-      showNotification(data.message || `OTP sent to ${email}. Check your email inbox.`, "success");
-      showOTPView(email);
+      showNotification(data.message || `OTP sent to ${email}.`, "success");
+      showOTPView(email, data.dev_otp, data.delivered_to_inbox);
       return;
     }
 
@@ -268,7 +295,7 @@ async function handleSignUp() {
   }
 
   try {
-    showNotification("Creating account & sending OTP to your email...", "info");
+    showNotification("Creating account & generating verification OTP...", "info");
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -277,8 +304,8 @@ async function handleSignUp() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Registration failed.");
 
-    showNotification(data.message || "OTP code sent to your email!", "success");
-    showOTPView(email);
+    showNotification(data.message || "OTP code ready!", "success");
+    showOTPView(email, data.dev_otp, data.delivered_to_inbox);
   } catch (err) {
     showNotification(err.message, "error");
   }
@@ -317,7 +344,7 @@ async function handleVerifyOTP() {
 async function handleResendOTP() {
   if (!currentPendingEmail) return;
   try {
-    showNotification("Sending a fresh OTP code to your email...", "info");
+    showNotification("Generating fresh verification code...", "info");
     const res = await fetch("/api/auth/resend-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -325,12 +352,8 @@ async function handleResendOTP() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Failed to resend code.");
-    showNotification("A fresh verification code was sent to your email inbox.", "success");
-    const inputOtp = document.getElementById("input-otp");
-    if (inputOtp) {
-      inputOtp.value = "";
-      inputOtp.focus();
-    }
+    showNotification(data.message || "A fresh verification code was generated.", "success");
+    showOTPView(currentPendingEmail, data.dev_otp, data.delivered_to_inbox);
   } catch (err) {
     showNotification(err.message, "error");
   }

@@ -9,13 +9,14 @@ logging.basicConfig(level=logging.INFO)
 
 class EmailService:
     @staticmethod
-    def send_otp_email(to_email: str, otp_code: str) -> bool:
+    def send_otp_email(to_email: str, otp_code: str) -> dict:
         """
         Dispatches a 6-digit OTP verification code to the user's email address.
         Uses TLS/SSL SMTP (e.g. Gmail, Outlook, AWS SES, Brevo, or custom SMTP).
         Also prints prominent development logs to the server terminal.
+        Returns a dictionary with delivery diagnostics.
         """
-        subject = f"Your Verification OTP Code: {otp_code} — {settings.PROJECT_NAME}"
+        subject = f"Your Verification OTP Code: {otp_code} - {settings.PROJECT_NAME}"
         
         # Plain text fallback
         body_text = f"""Hello,
@@ -94,15 +95,18 @@ The {settings.PROJECT_NAME} Team
 </html>
 """
 
-        # Prominent console logging
-        print("\n" + "=" * 65)
-        print(f"📧 [EMAIL SERVICE - OTP NOTIFICATION]")
-        print(f"To: {to_email}")
-        print(f"Subject: {subject}")
-        print(f"OTP Code: >>> {otp_code} <<< (valid for 10 minutes)")
-        if not (settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD):
-            print("💡 TIP: Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env to deliver real emails to inbox!")
-        print("=" * 65 + "\n")
+        # Prominent console logging (ASCII-safe for all Windows / Linux terminals)
+        try:
+            print("\n" + "=" * 65)
+            print("[EMAIL SERVICE - OTP NOTIFICATION]")
+            print(f"To: {to_email}")
+            print(f"Subject: {subject}")
+            print(f"OTP Code: >>> {otp_code} <<< (valid for 10 minutes)")
+            if not (settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD):
+                print("[TIP] Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env to deliver real emails to inbox!")
+            print("=" * 65 + "\n")
+        except Exception:
+            pass
         
         # Real SMTP Delivery
         if settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD:
@@ -117,22 +121,39 @@ The {settings.PROJECT_NAME} Team
                 
                 # Port 465 (SSL) vs Port 587 (STARTTLS)
                 if settings.SMTP_PORT == 465:
-                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
                         server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                         server.send_message(msg)
                 else:
-                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
                         server.starttls()
                         server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                         server.send_message(msg)
 
-                logger.info(f"✅ Real OTP email delivered via SMTP to {to_email}")
-                return True
+                logger.info(f"Real OTP email delivered via SMTP to {to_email}")
+                return {
+                    "success": True,
+                    "delivered_via_smtp": True,
+                    "message": f"Verification code sent to {to_email} inbox.",
+                    "error_detail": None
+                }
             except Exception as e:
-                logger.error(f"❌ Failed to deliver email via SMTP: {e}")
-                return False
+                err_msg = str(e)
+                logger.error(f"Failed to deliver email via SMTP: {err_msg}")
+                return {
+                    "success": False,
+                    "delivered_via_smtp": False,
+                    "message": f"SMTP delivery failed ({err_msg}).",
+                    "error_detail": err_msg
+                }
         else:
-            logger.info("ℹ️ SMTP settings not configured in .env. Console OTP output logged above.")
-            return True
+            reason = "SMTP_PASSWORD is empty in .env" if not settings.SMTP_PASSWORD else "SMTP settings incomplete in .env"
+            logger.info(f"{reason}. Console OTP logged.")
+            return {
+                "success": True,
+                "delivered_via_smtp": False,
+                "message": f"Real email delivery paused ({reason}).",
+                "error_detail": reason
+            }
 
 email_service = EmailService()
