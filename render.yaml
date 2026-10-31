@@ -18,6 +18,10 @@ services:
         sync: false
       - key: EMAIL_DEV_MODE
         value: "false"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
       - key: SMTP_HOST
         value: "smtp.gmail.com"
       - key: SMTP_PORT

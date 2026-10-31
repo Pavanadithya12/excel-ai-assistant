@@ -56,7 +56,7 @@ def register_user(request: UserSignUpRequest, db: Session = Depends(get_db)):
 
     msg = f"Verification code sent to {user.email}! Please check your Gmail inbox."
     if not delivered:
-        msg = f"Verification code generated! (Delivery note: {delivery.get('error_detail')}. Code: {otp})"
+        msg = f"Account created! Your verification code is {otp} (pre-filled below). Click Verify to enter!"
 
     return {
         "message": msg,
@@ -113,7 +113,7 @@ def resend_otp(request: ResendOTPRequest, db: Session = Depends(get_db)):
 
     msg = f"Fresh verification OTP code sent to {user.email}! Please check your Gmail inbox."
     if not delivered:
-        msg = f"Fresh verification OTP code generated! (Delivery note: {delivery.get('error_detail')}. Code: {otp})"
+        msg = f"Fresh verification code: {otp} (pre-filled below). Click Verify to enter!"
 
     return {
         "message": msg,

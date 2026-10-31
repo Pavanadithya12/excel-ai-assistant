@@ -29,8 +29,10 @@ class Settings(BaseSettings):
     CHARTS_DIR: str = os.getenv("CHARTS_DIR", "/tmp/charts" if IS_VERCEL else os.path.join(BASE_DIR, "app", "static", "charts"))
     
     # Email / OTP Settings
-    # When True: OTP is only logged to console. When False: real email is sent via SMTP.
+    # When True: OTP is only logged to console. When False: real email is sent via SMTP or HTTPS API.
     EMAIL_DEV_MODE: bool = os.getenv("EMAIL_DEV_MODE", "false").strip().lower() not in ("false", "0", "no")
+    RESEND_API_KEY: Optional[str] = os.getenv("RESEND_API_KEY", None)
+    BREVO_API_KEY: Optional[str] = os.getenv("BREVO_API_KEY", None)
     SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST") or "smtp.gmail.com"
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USER: Optional[str] = os.getenv("SMTP_USER") or "pavanadithya32@gmail.com"

@@ -108,7 +108,71 @@ The {settings.PROJECT_NAME} Team
         except Exception:
             pass
         
-        # Real SMTP Delivery
+        # 1. Try Resend HTTPS API (Port 443 - Never blocked by Render)
+        if settings.RESEND_API_KEY:
+            try:
+                import json
+                import urllib.request
+                resend_payload = json.dumps({
+                    "from": f"{settings.PROJECT_NAME} <onboarding@resend.dev>",
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body_html
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    "https://api.resend.com/emails",
+                    data=resend_payload,
+                    headers={
+                        "Authorization": f"Bearer {settings.RESEND_API_KEY.strip()}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status in (200, 201):
+                        logger.info(f"Real OTP email delivered via Resend HTTPS API to {to_email}")
+                        return {
+                            "success": True,
+                            "delivered_via_smtp": True,
+                            "message": f"Verification code sent to {to_email} inbox via Resend.",
+                            "error_detail": None,
+                            "otp": otp_code
+                        }
+            except Exception as resend_err:
+                logger.warning(f"Resend delivery failed: {resend_err}")
+
+        # 2. Try Brevo HTTPS API (Port 443 - Never blocked by Render)
+        if settings.BREVO_API_KEY:
+            try:
+                import json
+                import urllib.request
+                brevo_payload = json.dumps({
+                    "sender": {"name": settings.PROJECT_NAME, "email": settings.FROM_EMAIL or "noreply@aiexcel.com"},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": body_html
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    "https://api.brevo.com/v3/smtp/email",
+                    data=brevo_payload,
+                    headers={
+                        "api-key": settings.BREVO_API_KEY.strip(),
+                        "Content-Type": "application/json"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status in (200, 201):
+                        logger.info(f"Real OTP email delivered via Brevo HTTPS API to {to_email}")
+                        return {
+                            "success": True,
+                            "delivered_via_smtp": True,
+                            "message": f"Verification code sent to {to_email} inbox via Brevo.",
+                            "error_detail": None,
+                            "otp": otp_code
+                        }
+            except Exception as brevo_err:
+                logger.warning(f"Brevo delivery failed: {brevo_err}")
+
+        # 3. SMTP Delivery (for local environments and hosts where ports 587/465 are open)
         if settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD:
             smtp_pass = settings.SMTP_PASSWORD.strip()
             from_addr = settings.FROM_EMAIL or settings.SMTP_USER
@@ -122,39 +186,38 @@ The {settings.PROJECT_NAME} Team
             delivered = False
             last_error = None
 
-            # Attempt primary port (e.g. 587 STARTTLS or 465 SSL)
+            # Attempt primary port with short timeout (fail fast on cloud firewalls like Render)
             try:
                 if settings.SMTP_PORT == 465:
-                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=5) as server:
                         server.login(settings.SMTP_USER, smtp_pass)
                         server.send_message(msg)
                 else:
-                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=5) as server:
                         server.starttls()
                         server.login(settings.SMTP_USER, smtp_pass)
                         server.send_message(msg)
                 delivered = True
             except Exception as e:
                 last_error = str(e)
-                logger.warning(f"Primary SMTP delivery on port {settings.SMTP_PORT} failed ({last_error}). Attempting alternate port...")
-
-            # Fallback to alternate port if primary failed
-            if not delivered:
-                try:
-                    alt_port = 465 if settings.SMTP_PORT != 465 else 587
-                    if alt_port == 465:
-                        with smtplib.SMTP_SSL(settings.SMTP_HOST, alt_port, timeout=15) as server:
-                            server.login(settings.SMTP_USER, smtp_pass)
-                            server.send_message(msg)
-                    else:
-                        with smtplib.SMTP(settings.SMTP_HOST, alt_port, timeout=15) as server:
-                            server.starttls()
-                            server.login(settings.SMTP_USER, smtp_pass)
-                            server.send_message(msg)
-                    delivered = True
-                    logger.info(f"Fallback SMTP delivery succeeded on port {alt_port}")
-                except Exception as e2:
-                    last_error = f"{last_error}; fallback failed: {e2}"
+                # If network is completely unreachable, cloud firewall blocks all SMTP
+                if "101" not in last_error and "unreachable" not in last_error.lower():
+                    logger.warning(f"Primary SMTP delivery on port {settings.SMTP_PORT} failed ({last_error}). Attempting alternate port...")
+                    try:
+                        alt_port = 465 if settings.SMTP_PORT != 465 else 587
+                        if alt_port == 465:
+                            with smtplib.SMTP_SSL(settings.SMTP_HOST, alt_port, timeout=5) as server:
+                                server.login(settings.SMTP_USER, smtp_pass)
+                                server.send_message(msg)
+                        else:
+                            with smtplib.SMTP(settings.SMTP_HOST, alt_port, timeout=5) as server:
+                                server.starttls()
+                                server.login(settings.SMTP_USER, smtp_pass)
+                                server.send_message(msg)
+                        delivered = True
+                        logger.info(f"Fallback SMTP delivery succeeded on port {alt_port}")
+                    except Exception as e2:
+                        last_error = f"{last_error}; fallback failed: {e2}"
 
             if delivered:
                 logger.info(f"Real OTP email delivered via SMTP to {to_email}")
@@ -166,12 +229,14 @@ The {settings.PROJECT_NAME} Team
                     "otp": otp_code
                 }
             else:
-                logger.error(f"Failed to deliver email via SMTP: {last_error}")
+                is_cloud_blocked = "101" in str(last_error) or "unreachable" in str(last_error).lower()
+                clean_msg = "Render cloud firewall blocks raw SMTP ports (25, 465, 587)" if is_cloud_blocked else str(last_error)
+                logger.warning(f"SMTP delivery skipped/failed: {clean_msg}")
                 return {
                     "success": False,
                     "delivered_via_smtp": False,
-                    "message": f"SMTP delivery failed ({last_error}).",
-                    "error_detail": last_error,
+                    "message": f"Email delivery note: {clean_msg}.",
+                    "error_detail": clean_msg,
                     "otp": otp_code
                 }
         else:

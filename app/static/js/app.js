@@ -191,18 +191,27 @@ function switchAuthTab(tab) {
   }
 }
 
-function showOTPView(email) {
+function showOTPView(email, otpCode) {
   currentPendingEmail = email;
   document.getElementById("view-signin").style.display = "none";
   document.getElementById("view-signup").style.display = "none";
   document.getElementById("view-otp").style.display = "block";
   document.getElementById("otp-target-email").innerText = email;
 
-  // Clear input so user types/pastes the 6-digit code received in their Gmail inbox
+  const hintBanner = document.getElementById("otp-hint-banner");
+  const hintCode = document.getElementById("otp-hint-code");
   const inputOtp = document.getElementById("input-otp");
-  if (inputOtp) {
-    inputOtp.value = "";
-    inputOtp.focus();
+
+  if (otpCode) {
+    if (hintBanner) hintBanner.style.display = "block";
+    if (hintCode) hintCode.innerText = otpCode;
+    if (inputOtp) inputOtp.value = otpCode;
+  } else {
+    if (hintBanner) hintBanner.style.display = "none";
+    if (inputOtp) {
+      inputOtp.value = "";
+      inputOtp.focus();
+    }
   }
 }
 
@@ -264,11 +273,7 @@ async function handleSignUp() {
     if (!res.ok) throw new Error(data.detail || "Registration failed.");
 
     showNotification(data.message || `Verification code sent to ${email}! Check your Gmail inbox.`, "success");
-    showOTPView(email);
-    if (data.otp) {
-      const inputOtp = document.getElementById("input-otp");
-      if (inputOtp) inputOtp.value = data.otp;
-    }
+    showOTPView(email, data.otp);
   } catch (err) {
     showNotification(err.message, "error");
   }
@@ -316,11 +321,7 @@ async function handleResendOTP() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Failed to resend code.");
     showNotification(data.message || "A fresh verification code was sent to your Gmail inbox.", "success");
-    showOTPView(currentPendingEmail);
-    if (data.otp) {
-      const inputOtp = document.getElementById("input-otp");
-      if (inputOtp) inputOtp.value = data.otp;
-    }
+    showOTPView(currentPendingEmail, data.otp);
   } catch (err) {
     showNotification(err.message, "error");
   }
