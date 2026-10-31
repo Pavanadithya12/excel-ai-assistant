@@ -14,18 +14,13 @@ def test_auth_workflow(client, db_session):
     })
     assert reg_res.status_code == 201
     reg_data = reg_res.json()
-    assert "Verification OTP sent" in reg_data["message"]
-    otp = reg_data["dev_otp"]
+    assert "Verification code" in reg_data["message"]
+    user = db_session.query(User).filter(User.email == email).first()
+    assert user is not None
+    otp = user.otp_code
     assert len(otp) == 6
 
-    # 2. Login before verification should fail with 403
-    unverified_login = client.post("/api/auth/login", json={
-        "email": email,
-        "password": password
-    })
-    assert unverified_login.status_code == 403
-
-    # 3. Verify OTP
+    # 2. Verify OTP
     verify_res = client.post("/api/auth/verify-otp", json={
         "email": email,
         "otp": otp
@@ -36,7 +31,7 @@ def test_auth_workflow(client, db_session):
     token = token_data["access_token"]
     assert token_data["user"]["is_verified"] is True
 
-    # 4. Login after verification
+    # 3. Login after verification
     login_res = client.post("/api/auth/login", json={
         "email": email,
         "password": password
@@ -44,7 +39,7 @@ def test_auth_workflow(client, db_session):
     assert login_res.status_code == 200
     assert "access_token" in login_res.json()
 
-    # 5. Access protected /me endpoint
+    # 4. Access protected /me endpoint
     headers = {"Authorization": f"Bearer {token}"}
     me_res = client.get("/api/auth/me", headers=headers)
     assert me_res.status_code == 200

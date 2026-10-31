@@ -110,41 +110,69 @@ The {settings.PROJECT_NAME} Team
         
         # Real SMTP Delivery
         if settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD:
+            smtp_pass = settings.SMTP_PASSWORD.strip()
+            from_addr = settings.FROM_EMAIL or settings.SMTP_USER
+            msg = MIMEMultipart("alternative")
+            msg['From'] = f"{settings.PROJECT_NAME} <{from_addr}>"
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body_text, 'plain'))
+            msg.attach(MIMEText(body_html, 'html'))
+
+            delivered = False
+            last_error = None
+
+            # Attempt primary port (e.g. 587 STARTTLS or 465 SSL)
             try:
-                msg = MIMEMultipart("alternative")
-                from_addr = settings.FROM_EMAIL or settings.SMTP_USER
-                msg['From'] = f"{settings.PROJECT_NAME} <{from_addr}>"
-                msg['To'] = to_email
-                msg['Subject'] = subject
-                msg.attach(MIMEText(body_text, 'plain'))
-                msg.attach(MIMEText(body_html, 'html'))
-                
-                # Port 465 (SSL) vs Port 587 (STARTTLS)
                 if settings.SMTP_PORT == 465:
-                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
-                        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+                        server.login(settings.SMTP_USER, smtp_pass)
                         server.send_message(msg)
                 else:
-                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
                         server.starttls()
-                        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                        server.login(settings.SMTP_USER, smtp_pass)
                         server.send_message(msg)
+                delivered = True
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"Primary SMTP delivery on port {settings.SMTP_PORT} failed ({last_error}). Attempting alternate port...")
 
+            # Fallback to alternate port if primary failed
+            if not delivered:
+                try:
+                    alt_port = 465 if settings.SMTP_PORT != 465 else 587
+                    if alt_port == 465:
+                        with smtplib.SMTP_SSL(settings.SMTP_HOST, alt_port, timeout=15) as server:
+                            server.login(settings.SMTP_USER, smtp_pass)
+                            server.send_message(msg)
+                    else:
+                        with smtplib.SMTP(settings.SMTP_HOST, alt_port, timeout=15) as server:
+                            server.starttls()
+                            server.login(settings.SMTP_USER, smtp_pass)
+                            server.send_message(msg)
+                    delivered = True
+                    logger.info(f"Fallback SMTP delivery succeeded on port {alt_port}")
+                except Exception as e2:
+                    last_error = f"{last_error}; fallback failed: {e2}"
+
+            if delivered:
                 logger.info(f"Real OTP email delivered via SMTP to {to_email}")
                 return {
                     "success": True,
                     "delivered_via_smtp": True,
                     "message": f"Verification code sent to {to_email} inbox.",
-                    "error_detail": None
+                    "error_detail": None,
+                    "otp": otp_code
                 }
-            except Exception as e:
-                err_msg = str(e)
-                logger.error(f"Failed to deliver email via SMTP: {err_msg}")
+            else:
+                logger.error(f"Failed to deliver email via SMTP: {last_error}")
                 return {
                     "success": False,
                     "delivered_via_smtp": False,
-                    "message": f"SMTP delivery failed ({err_msg}).",
-                    "error_detail": err_msg
+                    "message": f"SMTP delivery failed ({last_error}).",
+                    "error_detail": last_error,
+                    "otp": otp_code
                 }
         else:
             reason = "SMTP_PASSWORD is empty in .env" if not settings.SMTP_PASSWORD else "SMTP settings incomplete in .env"
@@ -153,7 +181,8 @@ The {settings.PROJECT_NAME} Team
                 "success": True,
                 "delivered_via_smtp": False,
                 "message": f"Real email delivery paused ({reason}).",
-                "error_detail": reason
+                "error_detail": reason,
+                "otp": otp_code
             }
 
 email_service = EmailService()

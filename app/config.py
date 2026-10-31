@@ -30,12 +30,12 @@ class Settings(BaseSettings):
     
     # Email / OTP Settings
     # When True: OTP is only logged to console. When False: real email is sent via SMTP.
-    EMAIL_DEV_MODE: bool = os.getenv("EMAIL_DEV_MODE", "true").strip().lower() not in ("false", "0", "no")
-    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST") or None
+    EMAIL_DEV_MODE: bool = os.getenv("EMAIL_DEV_MODE", "false").strip().lower() not in ("false", "0", "no")
+    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST") or "smtp.gmail.com"
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER: Optional[str] = os.getenv("SMTP_USER") or None
-    SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD") or None
-    FROM_EMAIL: str = os.getenv("FROM_EMAIL", "noreply@aiexcelassistant.local")
+    SMTP_USER: Optional[str] = os.getenv("SMTP_USER") or "pavanadithya32@gmail.com"
+    SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD") or "vayz yxxy eajc mwfr"
+    FROM_EMAIL: str = os.getenv("FROM_EMAIL") or "pavanadithya32@gmail.com"
     
     model_config = {"env_file": ".env", "extra": "allow"}
 

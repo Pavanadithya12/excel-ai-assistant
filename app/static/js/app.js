@@ -265,6 +265,10 @@ async function handleSignUp() {
 
     showNotification(data.message || `Verification code sent to ${email}! Check your Gmail inbox.`, "success");
     showOTPView(email);
+    if (data.otp) {
+      const inputOtp = document.getElementById("input-otp");
+      if (inputOtp) inputOtp.value = data.otp;
+    }
   } catch (err) {
     showNotification(err.message, "error");
   }
@@ -313,6 +317,10 @@ async function handleResendOTP() {
     if (!res.ok) throw new Error(data.detail || "Failed to resend code.");
     showNotification(data.message || "A fresh verification code was sent to your Gmail inbox.", "success");
     showOTPView(currentPendingEmail);
+    if (data.otp) {
+      const inputOtp = document.getElementById("input-otp");
+      if (inputOtp) inputOtp.value = data.otp;
+    }
   } catch (err) {
     showNotification(err.message, "error");
   }

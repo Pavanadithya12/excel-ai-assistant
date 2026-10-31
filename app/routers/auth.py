@@ -27,12 +27,11 @@ def register_user(request: UserSignUpRequest, db: Session = Depends(get_db)):
     """
     existing_user = db.query(User).filter(User.email == request.email).first()
     if existing_user:
-        if existing_user.is_verified:
-            raise HTTPException(status_code=400, detail="An account with this email already exists.")
-        # User exists but unverified: regenerate OTP
+        # Re-initialize user credentials and require OTP re-verification
         user = existing_user
         user.full_name = request.full_name
         user.hashed_password = auth_service.hash_password(request.password)
+        user.is_verified = False
     else:
         user = User(
             email=request.email,
@@ -51,12 +50,19 @@ def register_user(request: UserSignUpRequest, db: Session = Depends(get_db)):
 
     # Send Email OTP directly to Gmail inbox
     delivery = email_service.send_otp_email(user.email, otp)
-    if not delivery.get("delivered_via_smtp", False):
+    delivered = delivery.get("delivered_via_smtp", False)
+    if not delivered:
         logger.warning(f"SMTP delivery note for {user.email}: {delivery.get('message')}")
 
+    msg = f"Verification code sent to {user.email}! Please check your Gmail inbox."
+    if not delivered:
+        msg = f"Verification code generated! (Delivery note: {delivery.get('error_detail')}. Code: {otp})"
+
     return {
-        "message": f"Verification code sent to {user.email}! Please check your Gmail inbox, copy the 6-digit code, and enter it below.",
-        "email": user.email
+        "message": msg,
+        "email": user.email,
+        "delivered_via_smtp": delivered,
+        "otp": otp if not delivered else None
     }
 
 @router.post("/verify-otp", response_model=Token)
@@ -102,10 +108,18 @@ def resend_otp(request: ResendOTPRequest, db: Session = Depends(get_db)):
     user.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
     db.commit()
 
-    email_service.send_otp_email(user.email, otp)
+    delivery = email_service.send_otp_email(user.email, otp)
+    delivered = delivery.get("delivered_via_smtp", False)
+
+    msg = f"Fresh verification OTP code sent to {user.email}! Please check your Gmail inbox."
+    if not delivered:
+        msg = f"Fresh verification OTP code generated! (Delivery note: {delivery.get('error_detail')}. Code: {otp})"
+
     return {
-        "message": f"Fresh verification OTP code sent to {user.email}! Please check your Gmail inbox.",
-        "email": user.email
+        "message": msg,
+        "email": user.email,
+        "delivered_via_smtp": delivered,
+        "otp": otp if not delivered else None
     }
 
 @router.post("/login", response_model=Token)

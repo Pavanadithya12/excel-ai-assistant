@@ -19,12 +19,12 @@ services:
       - key: EMAIL_DEV_MODE
         value: "false"
       - key: SMTP_HOST
-        sync: false
+        value: "smtp.gmail.com"
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        sync: false
+        value: "pavanadithya32@gmail.com"
       - key: SMTP_PASSWORD
-        sync: false
+        value: "vayz yxxy eajc mwfr"
       - key: FROM_EMAIL
-        sync: false
+        value: "pavanadithya32@gmail.com"

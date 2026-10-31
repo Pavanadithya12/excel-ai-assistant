@@ -19,6 +19,15 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
     Base.metadata.create_all(bind=test_engine)
+    # Mock email service during tests to avoid external SMTP calls
+    from app.services.email_service import email_service
+    email_service.send_otp_email = lambda to_email, otp_code: {
+        "success": True,
+        "delivered_via_smtp": True,
+        "message": f"Verification code sent to {to_email} inbox.",
+        "error_detail": None,
+        "otp": otp_code
+    }
     sample_file = "sample_data/sample_sales_data.xlsx"
     if not os.path.exists(sample_file):
         generate_sample_sales_data(sample_file)
