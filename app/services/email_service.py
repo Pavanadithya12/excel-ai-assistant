@@ -186,14 +186,14 @@ The {settings.PROJECT_NAME} Team
             delivered = False
             last_error = None
 
-            # Attempt primary port with short timeout (fail fast on cloud firewalls like Render)
+            # Attempt primary port
             try:
                 if settings.SMTP_PORT == 465:
-                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=5) as server:
+                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
                         server.login(settings.SMTP_USER, smtp_pass)
                         server.send_message(msg)
                 else:
-                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=5) as server:
+                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
                         server.starttls()
                         server.login(settings.SMTP_USER, smtp_pass)
                         server.send_message(msg)
@@ -206,11 +206,11 @@ The {settings.PROJECT_NAME} Team
                     try:
                         alt_port = 465 if settings.SMTP_PORT != 465 else 587
                         if alt_port == 465:
-                            with smtplib.SMTP_SSL(settings.SMTP_HOST, alt_port, timeout=5) as server:
+                            with smtplib.SMTP_SSL(settings.SMTP_HOST, alt_port, timeout=10) as server:
                                 server.login(settings.SMTP_USER, smtp_pass)
                                 server.send_message(msg)
                         else:
-                            with smtplib.SMTP(settings.SMTP_HOST, alt_port, timeout=5) as server:
+                            with smtplib.SMTP(settings.SMTP_HOST, alt_port, timeout=10) as server:
                                 server.starttls()
                                 server.login(settings.SMTP_USER, smtp_pass)
                                 server.send_message(msg)
